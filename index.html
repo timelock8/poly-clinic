@@ -1,0 +1,1808 @@
+<meta name="claude:viewport-fit-sides" content="cover">
+<title>Poly Clinic Front Desk</title>
+<meta name="description" content="Front desk: registration, procedures, client search, reports.">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Light and dark tokens. The sidebar keeps its own dark tokens in both themes. */
+:root{
+  --bg:#F3F2F9; --surface:#FFFFFF; --field:#F7F6FC; --ink:#1D1A3B; --muted:#66638C; --line:#E4E2F1;
+  --accent:#6A5AE0; --accent-ink:#FFFFFF; --accent-soft:#ECEAFD; --accent-strong:#5646C9;
+  --warn:#9A4A00; --warn-soft:#FDEBD0; --ok:#0F6B4B; --ok-soft:#D7F5E8;
+  --side:#1D1A3B; --side-ink:#EEEDFB; --side-muted:#A7A4D2; --side-active:#2F2A5E;
+  --shadow:0 1px 2px rgba(29,26,59,.05),0 10px 30px rgba(29,26,59,.06);
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#100E22; --surface:#191735; --field:#221F41; --ink:#EEEDFB; --muted:#A7A4CF; --line:#2F2B55;
+    --accent:#A89BFF; --accent-ink:#130F33; --accent-soft:#2B2660; --accent-strong:#C3B9FF;
+    --warn:#FBBF77; --warn-soft:#3B2A12; --ok:#7FE3B8; --ok-soft:#133829;
+    --side:#0A0920; --side-ink:#EEEDFB; --side-muted:#8E8BBF; --side-active:#26224D;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#100E22; --surface:#191735; --field:#221F41; --ink:#EEEDFB; --muted:#A7A4CF; --line:#2F2B55;
+  --accent:#A89BFF; --accent-ink:#130F33; --accent-soft:#2B2660; --accent-strong:#C3B9FF;
+  --warn:#FBBF77; --warn-soft:#3B2A12; --ok:#7FE3B8; --ok-soft:#133829;
+  --side:#0A0920; --side-ink:#EEEDFB; --side-muted:#8E8BBF; --side-active:#26224D;
+  --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.35);
+  color-scheme:dark;
+}
+[hidden]{display:none!important}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:15px/1.5 "Plus Jakarta Sans",system-ui,-apple-system,"Segoe UI",sans-serif}
+h1,h2,h3{margin:0;line-height:1.25;text-wrap:balance}
+h2{font-size:18px;font-weight:800;letter-spacing:-.01em}
+h3.group{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:22px 0 10px}
+p{margin:0}
+.mono{font-family:"IBM Plex Mono",ui-monospace,Menlo,monospace;font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.meta{color:var(--muted);font-size:13px;margin-top:2px;overflow-wrap:anywhere}
+.hint{color:var(--muted);font-size:14px;margin-top:4px}
+
+/* Layout: sidebar on the left on desktop, a dropdown menu on phones */
+.app{display:grid;grid-template-columns:240px minmax(0,1fr);position:relative;min-height:100%}
+.side{background:var(--side);color:var(--side-ink)}
+.side-inner{position:sticky;top:0;padding:22px 14px;display:grid;gap:4px;align-content:start}
+.brand{display:flex;align-items:center;gap:12px;padding:4px 8px 20px}
+.brand strong{font-size:16px;font-weight:800}
+.side-sub{font-size:12px;color:var(--side-muted)}
+.mark{width:38px;height:38px;flex:none;border-radius:12px;background:var(--accent);color:var(--accent-ink);display:grid;place-items:center;font-weight:800}
+.nav-title{font-size:11px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--side-muted);padding:14px 12px 6px}
+.tab{display:flex;justify-content:space-between;align-items:center;gap:8px;width:100%;background:transparent;border:none;color:var(--side-muted);padding:10px 12px;border-radius:12px;text-align:left;font-weight:600;font-size:15px;cursor:pointer;transition:background .2s ease,color .2s ease}
+.tab:hover{background:var(--side-active);color:var(--side-ink)}
+.tab[aria-selected="true"]{background:var(--side-active);color:var(--side-ink)}
+.tab[aria-selected="true"]::before{content:"";width:7px;height:7px;border-radius:50%;background:var(--accent);margin-right:10px;flex:none}
+.tab[aria-selected="true"]{justify-content:flex-start}
+.tab .count{margin-left:auto}
+.main{min-width:0}
+.topbar{position:sticky;top:0;z-index:10;display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px 14px;padding-block:14px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));background:var(--bg);border-bottom:1px solid var(--line)}
+.top-left{display:flex;align-items:center;gap:12px;min-width:0}
+#pageTitle{font-size:18px;font-weight:800;letter-spacing:-.01em}
+.wrap{max-width:1100px;margin:0 auto;padding-block:24px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));min-width:0}
+@media (min-width:860px){
+  .topbar{padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+  .wrap{padding-left:max(28px,env(safe-area-inset-left,0px));padding-right:max(28px,env(safe-area-inset-right,0px))}
+}
+@media (max-width:859px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  .side{display:none;position:absolute;left:12px;right:12px;top:64px;z-index:30;border-radius:18px;box-shadow:var(--shadow)}
+  .side.open{display:block}
+  .side-inner{position:static;padding:14px}
+  .menu-btn{display:inline-flex}
+}
+
+/* Phones: the menu sits at the top as a row of tabs, always visible */
+@media (max-width:859px){
+  .side{display:block;position:static;left:auto;right:auto;top:auto;border-radius:0;box-shadow:none;z-index:auto;order:-1}
+  .side-inner{padding:10px 12px;display:flex;gap:8px;overflow-x:auto;align-items:center}
+  .brand,.nav-title{display:none}
+  .tab{width:auto;flex:none;white-space:nowrap;padding:8px 14px;font-size:14px}
+  .tab[aria-selected="true"]::before{display:none}
+  .topbar .menu-btn{display:none}
+  .app{display:flex;flex-direction:column}
+}
+/* Menu button toggles the sidebar on desktop (collapsed) and the dropdown on phones */
+.app.collapsed{grid-template-columns:minmax(0,1fr)}
+.app.collapsed .side{display:none}
+.menu-btn{display:inline-flex}
+/* Status pill in the top bar */
+.status{font-size:13px;font-weight:600;color:var(--muted);background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 12px;max-width:100%;overflow-wrap:anywhere}
+.status.warn{color:var(--warn);background:var(--warn-soft);border-color:transparent}
+.count{display:inline-block;min-width:22px;padding:1px 7px;border-radius:999px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700;text-align:center}
+
+/* Surfaces */
+.panel{background:var(--surface);border-radius:18px;padding:22px;margin-bottom:18px;box-shadow:var(--shadow);min-width:0}
+.panel-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-end;gap:12px;margin-bottom:14px}
+.card{border:1px solid var(--line);border-radius:14px;padding:16px;background:var(--surface);display:grid;gap:8px;min-width:0;transition:transform .2s ease,box-shadow .2s ease}
+.card:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.list{display:grid;gap:12px;min-width:0}
+.section{margin-top:22px}
+.section>h3{font-size:15px;font-weight:800;margin-bottom:10px}
+.row{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px;min-width:0}
+.row>div{min-width:0}
+.row-actions{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.notes{font-size:14px;background:var(--field);border-radius:10px;padding:10px 12px;overflow-wrap:anywhere}
+.empty{color:var(--muted);text-align:center;padding:22px;border:1px dashed var(--line);border-radius:14px;font-size:14px}
+.chip{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);border-radius:999px;padding:6px 8px 6px 14px;font-size:14px;max-width:100%;overflow-wrap:anywhere}
+
+/* Forms */
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px 16px;min-width:0}
+.span2{grid-column:1/-1}
+label{display:grid;gap:6px;font-size:13px;font-weight:600;color:var(--muted);min-width:0}
+input,select,textarea{font:inherit;font-size:15px;font-weight:500;color:var(--ink);background:var(--field);border:1px solid var(--line);border-radius:11px;padding:10px 12px;width:100%;min-width:0;transition:border-color .2s ease,box-shadow .2s ease}
+input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 4px var(--accent-soft)}
+textarea{resize:vertical}
+input[readonly]{color:var(--muted)}
+fieldset{border:none;padding:0;margin:0;min-width:0}
+legend{font-size:13px;font-weight:600;color:var(--muted);padding:0 0 8px}
+.seg{display:flex;flex-wrap:wrap;gap:8px}
+.choice{display:flex;align-items:center;gap:8px;padding:9px 16px;border:1px solid var(--line);border-radius:999px;cursor:pointer;font-weight:600;font-size:14px;color:var(--ink);background:var(--field);transition:background .2s ease,color .2s ease}
+.choice:has(input:checked){background:var(--accent);color:var(--accent-ink);border-color:transparent}
+.choice input{width:auto;accent-color:var(--accent-ink)}
+.actions{display:flex;flex-wrap:wrap;gap:10px;justify-content:flex-end;margin-top:18px;align-items:center}
+.actions.start{justify-content:flex-start;margin-top:10px}
+.sess{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:12px;align-items:end;padding:14px;border:1px solid var(--line);border-radius:14px;min-width:0}
+.sess-title{grid-column:1/-1;font-weight:800;font-size:14px}
+
+/* Buttons */
+button{font:inherit;font-weight:700;font-size:14px;color:var(--ink);background:var(--surface);border:1px solid var(--line);border-radius:11px;padding:10px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;text-decoration:none;transition:transform .15s ease,border-color .2s ease,background .2s ease}
+button:hover{border-color:var(--accent)}
+button:active{transform:scale(.97)}
+button:disabled{opacity:.5;cursor:not-allowed}
+.primary{background:var(--accent);color:var(--accent-ink);border-color:transparent;box-shadow:0 6px 16px -6px var(--accent)}
+.primary:hover{background:var(--accent-strong);border-color:transparent}
+.ghost{background:transparent}
+.small{padding:7px 12px;font-size:13px;border-radius:9px}
+a.btn{font:inherit;font-weight:700;font-size:13px;color:var(--accent);border:1px solid var(--accent);border-radius:11px;padding:7px 12px;text-decoration:none;display:inline-flex;align-items:center}
+button.link{background:none;border:none;padding:0;color:var(--accent);font-weight:800;font-size:15px;text-align:left;text-decoration:underline;text-underline-offset:4px;box-shadow:none}
+:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
+details>summary{cursor:pointer;color:var(--accent);font-weight:700;list-style:none;padding:6px 0}
+details>summary::-webkit-details-marker{display:none}
+details[open]>summary{margin-bottom:10px}
+
+/* Lists and results */
+.results{display:grid;gap:8px;margin-top:12px;min-width:0}
+.result{width:100%;justify-content:space-between;text-align:left;background:var(--field);border-color:transparent;padding:12px 14px;border-radius:13px}
+.result:hover{background:var(--accent-soft);border-color:transparent}
+.result.selected{background:var(--accent-soft);box-shadow:inset 0 0 0 1px var(--accent)}
+.result>div{min-width:0}
+.result .meta{margin-top:0}
+.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:700;background:var(--accent-soft);color:var(--accent-strong);white-space:nowrap}
+.pill.ok{background:var(--ok-soft);color:var(--ok)}
+.pill.warn{background:var(--warn-soft);color:var(--warn)}
+.pill.muted{background:var(--line);color:var(--muted)}
+.bar{height:7px;border-radius:99px;background:var(--line);overflow:hidden;margin:6px 0}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-strong));border-radius:99px}
+
+/* Profile */
+.profile-head{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:flex-start;gap:12px}
+.profile-head h2{font-size:24px}
+.kv{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px 18px;margin:16px 0;min-width:0}
+.kv dt{font-size:12px;color:var(--muted);font-weight:700;letter-spacing:.02em}
+.kv dd{margin:3px 0 0;overflow-wrap:anywhere;font-weight:600}
+.sess-list{list-style:none;margin:0;padding:0;display:grid;gap:8px;min-width:0}
+.sess-list li{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:8px 12px;padding:10px 12px;background:var(--field);border-radius:11px;min-width:0;overflow-wrap:anywhere}
+.sess-list li>span{min-width:0}
+.msg{width:100%;min-height:120px;font-size:14px}
+
+/* Alerts */
+.alert-item{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface);min-width:0;transition:box-shadow .2s ease}
+.alert-item:hover{box-shadow:var(--shadow)}
+.alert-sum{display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:6px 12px;cursor:pointer;list-style:none;padding:4px 0;min-width:0}
+.alert-sum::-webkit-details-marker{display:none}
+.alert-body{display:grid;gap:10px;margin-top:8px;min-width:0}
+
+/* Dashboard */
+.kpis{display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:12px;margin-bottom:18px;min-width:0}
+.kpi{background:var(--surface);border-radius:16px;padding:14px 16px;box-shadow:var(--shadow);min-width:0;display:grid;gap:6px;transition:transform .2s ease}
+.kpi:hover{transform:translateY(-2px)}
+.kpi-label{font-size:12px;color:var(--muted);font-weight:700}
+.kpi-value{font-size:26px;font-weight:800;color:var(--accent-strong)}
+.dash-grid{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;min-width:0}
+.split{display:grid;grid-template-columns:minmax(0,1fr);gap:18px;align-items:start;min-width:0}
+@media (min-width:900px){.dash-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.split{grid-template-columns:minmax(0,1fr) minmax(0,1.3fr)}}
+.bars{display:grid;gap:10px;min-width:0}
+.bar-row{display:grid;grid-template-columns:120px minmax(0,1fr) 36px;gap:10px;align-items:center;font-size:14px}
+.track{height:10px;background:var(--line);border-radius:99px;overflow:hidden}
+.track i{display:block;height:100%;background:linear-gradient(90deg,var(--accent),var(--accent-strong));border-radius:99px}
+.tbl{display:grid;min-width:0;font-size:14px}
+.tr{display:grid;grid-template-columns:minmax(0,1.6fr) repeat(3,minmax(0,1fr));gap:8px;padding:10px 6px;border-bottom:1px solid var(--line);min-width:0;overflow-wrap:anywhere}
+.tr.head{color:var(--muted);font-size:12px;font-weight:700}
+
+/* Toasts */
+#toasts{position:fixed;z-index:40;left:0;right:0;bottom:env(safe-area-inset-bottom,0px);display:grid;justify-items:center;gap:8px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-bottom:18px;pointer-events:none}
+.toast{background:var(--ink);color:var(--bg);padding:12px 16px;border-radius:14px;max-width:560px;width:100%;font-size:14px;font-weight:600;box-shadow:0 12px 30px rgba(0,0,0,.25);animation:toastIn .35s cubic-bezier(.2,.7,.2,1) both}
+.toast.err{background:var(--warn-soft);color:var(--warn);border:1px solid var(--warn)}
+
+/* Page sections and the animation */
+@keyframes rise{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+@keyframes toastIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+.view:not([hidden]){animation:rise .45s cubic-bezier(.2,.7,.2,1) both}
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation:none!important;transition:none!important}
+}
+/* Menu: closed by default, opens from the Menu button as a panel and closes on a choice or an outside click */
+.app{display:block;grid-template-columns:none}
+.topbar .menu-btn{display:inline-flex}
+.side{display:none;position:absolute;left:max(16px,env(safe-area-inset-left,0px));top:72px;width:min(260px,calc(100vw - 32px));z-index:30;border-radius:18px;box-shadow:0 18px 40px rgba(0,0,0,.28)}
+.side.open{display:block}
+.side-inner{position:static;padding:14px;display:grid;gap:4px;align-content:start}
+.brand{display:flex}
+.nav-title{display:block}
+.tab{width:100%;flex:initial;white-space:normal;padding:10px 12px;font-size:15px}
+.tab[aria-selected="true"]::before{display:block}
+/* Menu: a clean light dropdown under the top bar, opaque so the page behind does not show */
+.side.open{display:block;position:relative;left:0;right:auto;top:0;width:100%;background:var(--surface);border-bottom:1px solid var(--line);box-shadow:0 16px 32px rgba(29,26,59,.16);padding:8px 0;animation:menuIn .18s cubic-bezier(.2,.7,.2,1) both}
+.side.open .side-inner{padding:0 max(16px,env(safe-area-inset-left,0px));display:grid;gap:4px;max-width:720px;margin:0 auto}
+.side.open .brand,.side.open .nav-title{display:none}
+.side.open .tab{display:grid;grid-template-columns:34px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;background:transparent;border:1px solid transparent;border-radius:14px;color:var(--ink);padding:10px 12px;box-shadow:none;min-height:0;font-size:15px;text-align:left}
+.side.open .tab:hover{background:var(--field)}
+.side.open .tab[aria-selected="true"]{background:var(--accent-soft);border-color:transparent}
+.side.open .tab[aria-selected="true"]::before{display:none}
+.side.open .tab-num{display:grid;place-items:center;width:34px;height:34px;border-radius:10px;background:var(--accent);color:var(--accent-ink);font-size:12px;font-weight:700}
+.side.open .tab-txt{display:grid;gap:1px}
+.side.open .tab-txt b{font-size:15px;font-weight:700;color:var(--ink)}
+.side.open .tab-txt small{display:block;font-size:12px;color:var(--muted);font-weight:500}
+.side.open .count{background:var(--accent);color:var(--accent-ink)}
+@keyframes menuIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}
+/* Final menu: left column with a Menu row and numbered sections (matches the reference) */
+.app{display:grid;grid-template-columns:260px minmax(0,1fr);align-items:start}
+#sideNav{display:block;position:sticky;top:16px;align-self:start;margin:16px 0 16px 16px;width:auto;max-width:none;background:var(--surface);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow);padding:10px;z-index:auto;animation:none;inset:auto;color:var(--ink)}
+#sideNav .side-inner{display:block;padding:0;position:static;max-width:none;margin:0}
+#sideNav .brand,#sideNav .nav-title{display:none}
+#sideNav .menu-row{display:flex;align-items:center;gap:12px;width:100%;background:var(--field);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-weight:700;font-size:15px;color:var(--muted);box-shadow:none;margin-bottom:10px}
+#sideNav .menu-row:hover{border-color:var(--accent)}
+.burger{position:relative;width:18px;height:12px;flex:none;border-top:2px solid currentColor;border-bottom:2px solid currentColor}
+.burger::after{content:"";position:absolute;left:0;right:0;top:3px;border-top:2px solid currentColor}
+#sideNav .side-list{display:grid;gap:4px}
+#sideNav.collapsed .side-list{display:none}
+#sideNav .tab{display:grid;grid-template-columns:30px minmax(0,1fr) auto;align-items:center;gap:12px;width:100%;background:transparent;border:none;border-radius:12px;color:var(--ink);padding:10px 12px;box-shadow:none;min-height:0;font-size:15px;font-weight:600;text-align:left}
+#sideNav .tab:hover{background:var(--field)}
+#sideNav .tab[aria-selected="true"]{background:var(--accent);color:var(--accent-ink)}
+#sideNav .tab[aria-selected="true"]::before{display:none}
+#sideNav .tab-num{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;background:var(--accent-soft);color:var(--accent-strong);font-size:13px;font-weight:700}
+#sideNav .tab[aria-selected="true"] .tab-num{background:rgba(255,255,255,.22);color:var(--accent-ink)}
+#sideNav .tab-txt{display:block;min-width:0}
+#sideNav .tab-txt b{font-size:15px;font-weight:600;color:inherit}
+#sideNav .count{margin-left:6px;background:var(--accent);color:var(--accent-ink)}
+#sideNav .tab[aria-selected="true"] .count{background:rgba(255,255,255,.25);color:var(--accent-ink)}
+@media (max-width:859px){
+  .app{grid-template-columns:minmax(0,1fr)}
+  #sideNav{position:static;margin:12px 16px 0;width:auto}
+}
+/* Menu hidden: the left panel is removed and a Menu button in the top bar brings it back */
+.menu-open{display:inline-flex;align-items:center;gap:8px;background:var(--surface);border:1px solid var(--accent);color:var(--accent-strong);font-weight:700;font-size:14px;padding:8px 14px;border-radius:10px}
+.menu-open::before{content:"";width:16px;height:10px;border-top:2px solid currentColor;border-bottom:2px solid currentColor;position:relative;box-sizing:border-box}
+.app.menu-hidden{grid-template-columns:minmax(0,1fr)}
+.app.menu-hidden #sideNav{display:none}
+@media (max-width:859px){.app.menu-hidden{grid-template-columns:minmax(0,1fr)}}
+.kpi-btn{width:100%;text-align:left;cursor:pointer;font:inherit;display:grid;gap:6px;padding:14px 16px}
+.kpi-btn.sel{box-shadow:0 0 0 2px var(--accent)}
+</style>
+<div class="app">
+
+  <aside class="side" id="sideNav" aria-label="Sections">
+    <button type="button" class="menu-row" id="menuBtn" aria-expanded="true" aria-controls="sideList"><span class="burger" aria-hidden="true"></span><span>Menu</span></button>
+    <nav class="side-list" id="sideList">
+        <button class="tab" data-tab="dashboard" aria-selected="false"><span class="tab-num">01</span><span class="tab-txt"><b>Dashboard</b></span></button>
+        <button class="tab" data-tab="register" aria-selected="false"><span class="tab-num">02</span><span class="tab-txt"><b>Register</b></span></button>
+        <button class="tab" data-tab="procedures" aria-selected="false"><span class="tab-num">03</span><span class="tab-txt"><b>Procedures</b></span></button>
+        <button class="tab" data-tab="find" aria-selected="false"><span class="tab-num">04</span><span class="tab-txt"><b>Find client</b></span></button>
+        <button class="tab" data-tab="alerts" aria-selected="false"><span class="tab-num">05</span><span class="tab-txt"><b>Alerts <span id="alertCount" class="count">0</span></b></span></button>
+        <button class="tab" data-tab="reports" aria-selected="false"><span class="tab-num">06</span><span class="tab-txt"><b>Report</b></span></button>
+    </nav>
+  </aside>
+  <div class="main">
+    <header class="topbar">
+      <div class="top-left">
+        <button type="button" class="menu-open" id="menuOpenBtn" aria-controls="sideNav" hidden>Menu</button>
+            <h1 id="pageTitle">Dashboard</h1>
+      </div>
+      <div id="status" class="status" role="status">Connecting to records…</div>
+    </header>
+  
+    <div class="wrap">
+      <datalist id="staffList"></datalist>
+      <datalist id="drList"></datalist>
+
+      <!-- DASHBOARD -->
+      <section id="view-dashboard" class="view" data-view="dashboard" hidden>
+        <div id="dashKpi" class="kpis"></div>
+        <div id="dashDetail" hidden></div>
+      </section>
+
+      <!-- REGISTER -->
+      <section id="view-register" class="view" data-view="register" hidden>
+        <div id="regNext" class="panel" hidden></div>
+        <div class="panel">
+          <div class="panel-head"><div><h2>New registration</h2><p class="hint">Enter a new client or a returning client. Existing clients are matched by ID number or mobile.</p></div></div>
+          <form id="regForm" novalidate autocomplete="off">
+            <h3 class="group">Visit</h3>
+            <div class="grid">
+              <label>Date <input type="date" name="date" required></label>
+              <label>Day <input type="text" id="regDay" readonly tabindex="-1" placeholder="Pick a date"></label>
+              <label>Time <input type="time" name="time" required></label>
+            </div>
+            <h3 class="group">Client</h3>
+            <div class="grid">
+              <label>Name <input name="name" required></label>
+              <label>ID number <input name="idNumber" required></label>
+              <label>Mobile <input name="mobile" inputmode="tel" required></label>
+              <label>Email <input type="email" name="email"></label>
+            </div>
+            <h3 class="group">Treatment</h3>
+            <div class="grid">
+              <label>Treatment name <input name="treatmentName" placeholder="e.g. Laser hair removal"></label>
+              <label>Dr name <input name="drName" list="drList"></label>
+              <label>Sales person <input name="salesPerson" list="staffList" required></label>
+              <label class="span2">Reference <input name="reference" placeholder="Referred by or source"></label>
+            </div>
+            <h3 class="group">Remark</h3>
+            <label>Remark <textarea name="remark" rows="3"></textarea></label>
+            <div class="actions">
+              <button type="reset" class="ghost">Clear</button>
+              <button type="submit" class="primary">Save registration</button>
+            </div>
+          </form>
+        </div>
+      </section>
+
+      <!-- PROCEDURES -->
+      <section id="view-procedures" class="view" data-view="procedures" hidden>
+        <div class="panel">
+          <div class="panel-head"><div><h2 id="procTitle">New procedure plan</h2><p class="hint">Find a client first. Their procedures appear below the search.</p></div></div>
+          <label>Find client <input type="search" id="procSearch" placeholder="Name, mobile or ID number" autocomplete="off"></label>
+          <div id="procResults" class="results"></div>
+          <div id="procChosen" class="actions start"></div>
+          <div id="procExisting" class="list" style="margin-top:14px"></div>
+        </div>
+        <form id="procForm" class="panel" novalidate autocomplete="off" hidden>
+          <h3 class="group" style="margin-top:0">Treatment</h3>
+          <div class="grid">
+            <label class="span2">Treatment name <input name="treatmentName" required></label>
+            <label>Sessions needed to finish <input type="number" name="totalSessions" min="1" value="1" required></label>
+            <label>Dr name <input name="drName" list="drList"></label>
+            <label>Sales person <input name="salesPerson" list="staffList" required></label>
+            <label class="span2">Notes <textarea name="notes" rows="2"></textarea></label>
+          </div>
+          <h3 class="group">Session dates and times</h3>
+          <p class="hint">Enter the date and time of each session, and whether it is finished.</p>
+          <div id="sessionRows" class="list" style="margin-top:12px"></div>
+          <div class="actions">
+            <button type="button" class="ghost" id="procCancel" data-act="cancel-edit" hidden>Cancel edit</button>
+            <button type="submit" class="ghost" id="procAnother">Save and add another treatment</button>
+            <button type="submit" class="primary" id="procSubmit">Save procedure</button>
+          </div>
+        </form>
+      </section>
+
+      <!-- FIND CLIENT -->
+      <section id="view-find" class="view" data-view="find" hidden>
+        <div class="panel">
+          <label>Search client <input type="search" id="findInput" placeholder="Type a name, mobile number or ID number" autocomplete="off"></label>
+          <div id="findResults" class="results"></div>
+        </div>
+        <div id="profile"></div>
+      </section>
+
+      <!-- ALERTS -->
+      <!-- REPORTS -->
+      <section id="view-reports" class="view" data-view="reports" hidden>
+        <div class="panel">
+          <div class="panel-head"><div><h2>Report</h2><p class="hint" id="rangeNote">Choose the dates, then click Filter.</p></div></div>
+          <div class="grid">
+            <label>From <input type="date" id="rangeFrom"></label>
+            <label>To <input type="date" id="rangeTo"></label>
+          </div>
+          <div class="actions start"><button type="button" class="primary" id="filterBtn" disabled>Filter</button></div>
+        </div>
+        <div id="filterResult" hidden></div>
+        <details class="panel">
+          <summary>Other reports</summary>
+          <div style="margin-top:12px">
+          <div class="panel">
+            <div class="panel-head">
+              <div><h2>Tomorrow's report</h2><p class="hint" id="reportNote"></p></div>
+              <button type="button" class="primary" id="reportBtn" disabled>Download report (CSV)</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div><h2>Names only report</h2><p class="hint" id="namesNote">A list of client names in the date range above, each name once.</p></div>
+              <button type="button" class="primary" id="namesBtn" disabled>Download names (CSV)</button>
+            </div>
+          </div>
+          <div class="panel">
+            <div class="panel-head">
+              <div><h2>All clients</h2><p class="hint" id="allNote"></p></div>
+            </div>
+            <div id="allList" class="list" style="max-height:520px;overflow:auto;padding-right:4px"></div>
+            <div class="actions"><button type="button" class="primary" id="allBtn" disabled>Download all clients (CSV)</button></div>
+          </div>
+          </div>
+        </details>
+      </section>
+
+      <section id="view-alerts" class="view" data-view="alerts" hidden>
+        <div class="panel">
+          <div class="panel-head">
+            <div><h2>Upcoming sessions and visits</h2><p class="hint">Click a row to see the details and actions.</p></div>
+            <label style="min-width:220px">Sales person <select id="alertFilter"></select></label>
+          </div>
+          <div id="alertList" class="list"></div>
+        </div>
+        <details class="panel">
+          <summary>Alert settings</summary>
+          <form id="settingsForm" novalidate autocomplete="off" class="grid" style="margin-top:12px">
+            <label>Alert this many days ahead <input type="number" name="alertDays" min="0" max="60" value="20"></label>
+            <label>Sales staff (comma separated) <input name="staff" placeholder="Sara, Ahmed, Lina"></label>
+            <label>Country code for WhatsApp <input name="countryCode" placeholder="971"></label>
+            <div class="actions span2"><button type="submit" class="primary">Save settings</button></div>
+          </form>
+        </details>
+      </section>
+    </div>
+  </div>
+</div>
+<div id="toasts" aria-live="polite"></div>
+<!-- Supabase (free tier): shared database and staff sign-in for the GitHub Pages version -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.50.0/dist/umd/supabase.js"></script>
+<script>
+/* Supabase project. The publishable key is safe to publish: access is controlled by sign-in and the table rules. */
+const SUPABASE_URL = "https://vrieydopkyszwdwpxvkc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_hHxsZ5qJEiCRknqtbK_P2g_i1agyHNB";
+
+/* This block gives the app the same small database API that the Claude version uses. */
+(function () {
+  if (typeof supabase === "undefined") {
+    window.claude = { use: function () { return new Promise(function () {}); } };
+    var box = document.createElement("div");
+    box.setAttribute("style", "position:fixed;inset:0;z-index:99999;background:rgba(0,0,0,.6);display:flex;align-items:center;justify-content:center;padding:16px");
+    box.innerHTML = '<div style="font-family:system-ui;background:#fff;color:#111;padding:24px;border-radius:12px;max-width:520px"><h2 style="margin-top:0">The app could not load</h2><p>This page needs internet access to the Supabase library. Open the app from its GitHub Pages address (not a file preview), and check that cdn.jsdelivr.net is not blocked on this network.</p></div>';
+    document.addEventListener("DOMContentLoaded", function () { document.body.appendChild(box); });
+    return;
+  }
+
+  const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY, { auth: { persistSession: true, autoRefreshToken: true } });
+
+  // Map Supabase/Postgres errors to the codes the app already understands.
+  function fail(e, fallbackCode) {
+    const x = new Error((e && e.message) || "Request failed");
+    const c = e && e.code;
+    x.code = c === "42501" ? "not_granted"
+      : (e && e.status === 0) || /fetch|network/i.test(x.message) ? "unavailable"
+      : fallbackCode || "error";
+    return x;
+  }
+  // Path "clients/abc" -> collection "clients", id "abc".
+  const split = p => { const i = p.indexOf("/"); return { collection: p.slice(0, i), id: p.slice(i + 1) }; };
+
+  // Every listener re-reads its data when anything in the table changes.
+  const listeners = new Set();
+  const notifyAll = () => listeners.forEach(fn => fn());
+  let channelStarted = false;
+  function startChannel() {
+    if (channelStarted) return;
+    channelStarted = true;
+    sb.channel("docs-changes")
+      .on("postgres_changes", { event: "*", schema: "public", table: "docs" }, notifyAll)
+      .subscribe();
+  }
+
+  function listenTo(readFn, next, err) {
+    let stopped = false;
+    const run = async () => {
+      if (stopped) return;
+      try { next(await readFn()); } catch (e) { if (err) err(fail(e)); }
+    };
+    listeners.add(run);
+    startChannel();
+    run();
+    return () => { stopped = true; listeners.delete(run); };
+  }
+
+  async function readDoc(path) {
+    const { data, error } = await sb.from("docs").select("path,data").eq("path", path).maybeSingle();
+    if (error) throw error;
+    return data
+      ? { exists: true, id: split(path).id, data: () => data.data || {}, metadata: { fromCache: false } }
+      : { exists: false, id: split(path).id, data: () => ({}), metadata: { fromCache: false } };
+  }
+  async function readColl(collection) {
+    const { data, error } = await sb.from("docs").select("path,data").eq("collection", collection);
+    if (error) throw error;
+    return {
+      docs: (data || []).map(r => ({ id: split(r.path).id, exists: true, data: () => r.data || {} })),
+      metadata: { fromCache: false },
+    };
+  }
+
+  const docApi = path => ({
+    set: async d => {
+      const s = split(path);
+      const { error } = await sb.from("docs").upsert({ path, collection: s.collection, data: d, updated_at: new Date().toISOString() });
+      if (error) throw fail(error);
+      notifyAll();
+    },
+    update: async patch => {
+      // Merges the fields on the server. Fails with invalid_argument when the document does not exist.
+      const { data, error } = await sb.rpc("merge_doc", { p: path, patch });
+      if (error) throw fail(error);
+      if (!data) { const x = new Error("Document not found"); x.code = "invalid_argument"; throw x; }
+      notifyAll();
+    },
+    delete: async () => {
+      const { error } = await sb.from("docs").delete().eq("path", path);
+      if (error) throw fail(error);
+      notifyAll();
+    },
+    onSnapshot: (next, err) => listenTo(() => readDoc(path), next, err),
+  });
+  const collApi = collection => ({
+    doc: id => docApi(collection + "/" + id),
+    onSnapshot: (next, err) => listenTo(() => readColl(collection), next, err),
+  });
+  const db = { collection: p => collApi(p), doc: p => docApi(p) };
+
+  let resolveReady;
+  const ready = new Promise(r => { resolveReady = r; });
+  const loginBox = document.createElement("div");
+  loginBox.id = "loginBox";
+  loginBox.style.cssText = "position:fixed;inset:0;z-index:100;display:none;place-items:center;background:rgba(10,9,32,.6);padding:16px";
+  loginBox.innerHTML = '<form id="loginForm" style="background:#fff;color:#1D1A3B;border-radius:16px;padding:24px;width:min(360px,100%);display:grid;gap:12px;font:15px system-ui,sans-serif">' +
+    '<h2 style="margin:0;font-size:20px">Sign in to Poly Clinic</h2>' +
+    '<label style="display:grid;gap:4px;font-size:13px">Email<input name="email" type="email" required style="font:inherit;padding:10px;border:1px solid #ccc;border-radius:10px"></label>' +
+    '<label style="display:grid;gap:4px;font-size:13px">Password<input name="password" type="password" required style="font:inherit;padding:10px;border:1px solid #ccc;border-radius:10px"></label>' +
+    '<p id="loginErr" style="margin:0;color:#9A4A00;font-size:13px;min-height:1em"></p>' +
+    '<button type="submit" style="font:inherit;font-weight:700;padding:11px;border:none;border-radius:10px;background:#6A5AE0;color:#fff;cursor:pointer">Sign in</button></form>';
+  document.addEventListener("DOMContentLoaded", () => document.body.appendChild(loginBox));
+  loginBox.addEventListener("submit", async e => {
+    e.preventDefault();
+    const f = e.target;
+    const { error } = await sb.auth.signInWithPassword({ email: f.email.value.trim(), password: f.password.value });
+    f.password.value = "";
+    if (error) loginBox.querySelector("#loginErr").textContent = "Email or password is not correct.";
+  });
+
+  function showState(session) {
+    if (session) {
+      loginBox.style.display = "none";
+      resolveReady(session.user);
+    } else {
+      loginBox.style.display = "grid";
+    }
+  }
+  sb.auth.getSession().then(({ data }) => showState(data.session));
+  sb.auth.onAuthStateChange((_event, session) => showState(session));
+
+  window.claude = {
+    use: async name => {
+      if (name === "db") { await ready; return db; }
+      if (name === "user") { await ready; return { can: async () => true }; }
+      if (name === "downloads") {
+        return {
+          save: async ({ filename, data }) => {
+            const url = URL.createObjectURL(new Blob([data], { type: "text/csv;charset=utf-8" }));
+            const a = document.createElement("a");
+            a.href = url; a.download = filename; document.body.appendChild(a); a.click(); a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+          },
+        };
+      }
+      return null;
+    },
+  };
+})();
+</script>
+
+<script>
+(function(){
+"use strict";
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const esc = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const uid = p => p + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+const digits = v => String(v || "").replace(/\D/g, "");
+const normId = v => String(v || "").replace(/[\s-]/g, "").toUpperCase();
+const normText = v => String(v || "").trim().toLowerCase();
+const isoOf = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+const todayISO = () => isoOf(new Date());
+const parseISO = iso => { const [y, m, d] = iso.split("-").map(Number); return new Date(y, m - 1, d); };
+const addDays = (iso, n) => isoOf(new Date(parseISO(iso).getFullYear(), parseISO(iso).getMonth(), parseISO(iso).getDate() + n));
+const dayName = iso => parseISO(iso).toLocaleDateString("en-GB", { weekday: "long" });
+const fmtDate = iso => parseISO(iso).toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" });
+const nowISO = () => new Date().toISOString();
+const STATUS_LABEL = { booked: "Booked, not yet came", came_finished: "Came, operation finished", cancelled: "Cancelled" };
+const DEFAULT_SETTINGS = { alertDays: 20, countryCode: "971", staff: [] };
+const OPEN_KEY = "openKeys";
+
+const S = {
+  db: null, canWrite: null,
+  clients: new Map(), bookings: new Map(), treatments: new Map(), alerts: new Map(),
+  settings: { ...DEFAULT_SETTINGS },
+  loaded: {}, timers: {},
+  profileId: null, procClient: null, findQuery: "", procQuery: "", alertFilter: "",
+  open: new Set(), pending: new Set(),
+};
+
+function setStatus(text, warn) {
+  const el = $("#status");
+  el.textContent = text;
+  el.className = "status" + (warn ? " warn" : "");
+}
+
+function toast(msg, isErr) {
+  const el = document.createElement("div");
+  el.className = "toast" + (isErr ? " err" : "");
+  el.textContent = msg;
+  $("#toasts").appendChild(el);
+  setTimeout(() => el.remove(), isErr ? 6000 : 3200);
+}
+
+function friendly(e) {
+  const map = {
+    invalid_argument: "That record could not be saved. Check the fields and try again.",
+    transform_error: "That record could not be saved. Check the fields and try again.",
+    resource_exhausted: "Too many changes at once. Wait a moment and try again.",
+    quota_exceeded: "The database is full. Remove old records before adding more.",
+    unavailable: "Connection problem. Please try again.",
+    revoked: "You no longer have access to change records.",
+    not_granted: "Saving is not allowed in this view.",
+    capability_disabled: "Saving is not available in this view.",
+    capability_removed: "Saving is not available in this view.",
+  };
+  return (e && map[e.code]) || (e && e.message) || "Something went wrong. Please try again.";
+}
+
+// Runs a save, shows the result, and never leaves the page in a broken state.
+async function write(fn, okMsg) {
+  if (!S.db) { toast("Saving is not available in this view.", true); return false; }
+  if (S.canWrite === false) { toast("You can look up records, but you cannot change them.", true); return false; }
+  try {
+    await fn();
+    if (okMsg) toast(okMsg);
+    return true;
+  } catch (e) {
+    toast(friendly(e), true);
+    return false;
+  }
+}
+
+// Update an existing document; if it has vanished, write the full object instead.
+function putDoc(path, data, exists) {
+  if (!exists) return S.db.doc(path).set(data);
+  return S.db.doc(path).update(data).catch(e => {
+    if (e && e.code === "invalid_argument") return S.db.doc(path).set(data);
+    throw e;
+  });
+}
+
+function watchLoad(key) {
+  clearTimeout(S.timers[key]);
+  S.timers[key] = setTimeout(() => {
+    if (!S.loaded[key]) setStatus("Records are taking long to load. They may be out of date.", true);
+  }, 10000);
+}
+
+function listen(key, ref, onSnap) {
+  if (!S.loaded[key]) watchLoad(key);
+  return ref.onSnapshot(snap => {
+    if (!snap.metadata.fromCache) { S.loaded[key] = true; clearTimeout(S.timers[key]); }
+    onSnap(snap);
+    setStatus(S.canWrite === false ? "View only: you can look up records but not change them." : "Live: changes appear for everyone at once.", false);
+    renderAll();
+  }, e => {
+    S.loaded[key] = true;
+    clearTimeout(S.timers[key]);
+    setStatus(friendly(e), true);
+  });
+}
+
+function toMap(snap) {
+  const m = new Map();
+  snap.docs.forEach(d => { if (d.exists) m.set(d.id, { ...d.data(), id: d.id }); });
+  return m;
+}
+
+function startListeners(db) {
+  S.db = db;
+  listen("clients", db.collection("clients"), snap => { S.clients = toMap(snap); });
+  listen("bookings", db.collection("bookings"), snap => { S.bookings = toMap(snap); });
+  listen("treatments", db.collection("treatments"), snap => { S.treatments = toMap(snap); });
+  listen("alerts", db.collection("alerts"), snap => { S.alerts = toMap(snap); });
+  db.doc("settings/main").onSnapshot(snap => {
+    S.settings = { ...DEFAULT_SETTINGS, ...(snap.exists ? snap.data() : {}) };
+    fillSettingsForm();
+    renderAll();
+  }, e => setStatus(friendly(e), true));
+}
+
+async function boot() {
+  let db = null, user = null;
+  try {
+    if (window.claude && window.claude.use) {
+      db = await window.claude.use("db");
+      user = await window.claude.use("user");
+    }
+  } catch (e) { db = null; }
+  try { S.downloads = window.claude && window.claude.use ? await window.claude.use("downloads") : null; } catch (e) { S.downloads = null; }
+  try { S.canWrite = user ? await user.can("data.write") : null; } catch (e) { S.canWrite = null; }
+  if (!db) {
+    setStatus("Records are not connected in this view, so nothing can be saved here.", true);
+    renderAll();
+    return;
+  }
+  startListeners(db);
+}
+
+// Each painted container keeps open <details> and waits while the user types in it.
+function paint(id, html) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const a = document.activeElement;
+  if (a && el.contains(a) && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName)) { S.pending.add(id); return; }
+  el.innerHTML = html;
+  el.querySelectorAll("details[data-key]").forEach(d => { if (S.open.has(d.dataset.key)) d.open = true; });
+}
+
+document.addEventListener("toggle", e => {
+  const d = e.target;
+  if (!d.dataset || !d.dataset.key) return;
+  if (d.open) S.open.add(d.dataset.key); else S.open.delete(d.dataset.key);
+}, true);
+
+document.addEventListener("focusout", () => {
+  setTimeout(() => {
+    const a = document.activeElement;
+    if (S.pending.size && !(a && /^(INPUT|SELECT|TEXTAREA)$/.test(a.tagName))) {
+      S.pending.clear();
+      renderAll();
+    }
+  }, 150);
+});
+
+const VIEW_TITLES = { dashboard: "Dashboard", register: "Register", procedures: "Procedures", find: "Find client", alerts: "Alerts", reports: "Report" };
+function show(view) {
+  $("#pageTitle").textContent = VIEW_TITLES[view] || "";
+
+  $$(".view").forEach(v => { v.hidden = v.dataset.view !== view; });
+  $$(".tab").forEach(t => t.setAttribute("aria-selected", String(t.dataset.tab === view)));
+  renderAll();
+}
+
+// Parts 4 and 5 continue inside this same function scope.
+
+
+// ---------- helpers ----------
+const clientOf = id => S.clients.get(id) || null;
+const clientName = id => (clientOf(id) || {}).name || "Unknown client";
+const byDesc = (a, b) => (b.createdAt || "").localeCompare(a.createdAt || "");
+
+function findClient(f) {
+  const id = normId(f.idNumber), m = digits(f.mobile);
+  for (const c of S.clients.values()) if (id && normId(c.idNumber) === id) return c;
+  for (const c of S.clients.values()) if (m && digits(c.mobile) === m) return c;
+  return null;
+}
+
+function matchClients(q, limit = 30) {
+  const raw = String(q || "").trim();
+  if (!raw) return [];
+  const nq = normText(raw), dq = digits(raw), iq = /\d/.test(raw) ? normId(raw) : "";
+  return [...S.clients.values()]
+    .filter(c => normText(c.name).includes(nq)
+      || (dq.length >= 3 && digits(c.mobile).includes(dq))
+      || (iq.length >= 3 && normId(c.idNumber).includes(iq)))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)))
+    .slice(0, limit);
+}
+
+function requiredMissing(f, fields) {
+  const names = { date: "Date", time: "Time", name: "Name", idNumber: "ID number", mobile: "Mobile", salesPerson: "Sales person", treatmentName: "Treatment name" };
+  for (const k of fields) if (!String(f[k] || "").trim()) return `${names[k] || k} is required.`;
+  return "";
+}
+
+const formValues = form => Object.fromEntries(new FormData(form).entries());
+const trimAll = f => Object.fromEntries(Object.entries(f).map(([k, v]) => [k, typeof v === "string" ? v.trim() : v]));
+
+// Sessions of a procedure. Older procedures without a session list are shown as one
+// session per count, with the stored next session on the first pending one.
+function sessionsOf(t) {
+  if (Array.isArray(t.sessions)) return t.sessions;
+  const done = t.sessionsDone || 0;
+  const list = [];
+  for (let i = 1; i <= (t.totalSessions || 0); i++) {
+    const isNext = i === done + 1;
+    list.push({
+      no: i, status: i <= done ? "done" : "pending", doneDate: "",
+      date: isNext ? (t.nextSessionDate || "") : "", time: isNext ? (t.nextSessionTime || "") : "",
+      treatmentName: t.treatmentName,
+    });
+  }
+  return list;
+}
+
+function pendingSorted(sessions) {
+  return sessions.filter(s => s.status !== "done" && s.date)
+    .sort((a, b) => (a.date + (a.time || "")).localeCompare(b.date + (b.time || "")));
+}
+
+// Every upcoming, not-yet-done session for a client, earliest first.
+function upcomingSessionsOf(clientId) {
+  const today = todayISO(), out = [];
+  for (const t of S.treatments.values()) {
+    if (t.clientId !== clientId || t.status === "complete") continue;
+    for (const s of sessionsOf(t)) if (s.status !== "done" && s.date && s.date >= today) out.push({ t, s });
+  }
+  return out.sort((a, b) => (a.s.date + (a.s.time || "")).localeCompare(b.s.date + (b.s.time || "")));
+}
+
+function nextSessionOf(clientId) {
+  return upcomingSessionsOf(clientId)[0] || null;
+}
+
+// ---------- register ----------
+function updateDay() {
+  const d = $("#regForm").elements.date.value;
+  $("#regDay").value = d ? dayName(d) : "";
+}
+
+async function onRegister(ev) {
+  ev.preventDefault();
+  const f = trimAll(formValues(ev.target));
+  const err = requiredMissing(f, ["date", "time", "name", "idNumber", "mobile", "salesPerson"]);
+  if (err) return toast(err, true);
+  if (!/^\d{1,2}:\d{2}$/.test(f.time)) return toast("Enter the time as HH:MM.", true);
+  const existing = findClient(f);
+  const clientId = existing ? existing.id : uid("c_");
+  const now = nowISO();
+  const client = { name: f.name, idNumber: normId(f.idNumber), mobile: f.mobile, email: f.email || "", updatedAt: now };
+  const booking = {
+    clientId, date: f.date, day: dayName(f.date), time: f.time,
+    treatmentName: f.treatmentName || "", procedureNo: f.procedureNo || "", drName: f.drName || "", reference: f.reference || "",
+    salesPerson: f.salesPerson, status: f.status || "booked", remark: f.remark || "",
+    createdAt: now, updatedAt: now,
+  };
+  const ok = await write(async () => {
+    await putDoc("clients/" + clientId, existing ? client : { ...client, createdAt: now }, !!existing);
+    await S.db.doc("bookings/" + uid("b_")).set(booking);
+  }, existing ? "Registration saved. Existing client updated." : "Registration saved. New client added.");
+  if (ok) {
+    S.regClient = clientId;
+    S.regName = f.name || "";
+    renderAll();
+    ev.target.reset();
+    ev.target.elements.date.value = todayISO();
+    updateDay();
+  }
+}
+
+// ---------- procedures ----------
+function renderProcChosen() {
+  const c = clientOf(S.procClient);
+  $("#procForm").hidden = !S.procClient; // the form only appears once a client is found
+  paint("procChosen", c
+    ? `<span class="chip"><span><strong>${esc(c.name)}</strong> · <span class="mono">${esc(c.idNumber)}</span> · ${esc(c.mobile)}</span></span><button class="small ghost" type="button" data-act="clear-proc">Change</button>`
+    : `<span class="muted">No client chosen yet.</span>`);
+}
+
+function renderProcResults() {
+  if (!$("#procResults")) return;
+  if (S.procClient) { paint("procResults", ""); return; }
+  const list = matchClients(S.procQuery);
+  paint("procResults", list.length
+    ? list.map(c => `<button type="button" class="result" data-act="pick-proc" data-id="${esc(c.id)}"><div><strong>${esc(c.name)}</strong><div class="meta mono">${esc(c.idNumber)} · ${esc(c.mobile)}</div></div><span class="pill">Choose</span></button>`).join("")
+    : (S.procQuery.trim() ? `<div class="empty">No client matches. Register the client first.</div>` : ""));
+}
+
+// One date, time and treatment name row per session, built from the session count.
+function buildSessionRows(seed) {
+  const form = $("#procForm");
+  if (!form) return;
+  const total = Math.min(60, Math.max(1, parseInt(form.elements.totalSessions.value, 10) || 1));
+  const prev = seed || formValues(form);
+  const placeholder = esc(form.elements.treatmentName.value || "Same as procedure");
+  let html = "";
+  for (let i = 1; i <= total; i++) {
+    html += `<div class="sess">
+      <div class="sess-title">Session ${i}</div>
+      <label>Session date <input type="date" name="s_date_${i}" value="${esc(prev["s_date_" + i] || "")}" required></label>
+      <label>Session time <input type="time" name="s_time_${i}" value="${esc(prev["s_time_" + i] || "")}"></label>
+      <label>Treatment name <input name="s_name_${i}" value="${esc(prev["s_name_" + i] || "")}" placeholder="${placeholder}"></label>
+      <label>Status <select name="s_status_${i}">
+        <option value="pending" ${(prev["s_status_" + i] || "pending") === "done" ? "" : "selected"}>Pending</option>
+        <option value="done" ${(prev["s_status_" + i] || "pending") === "done" ? "selected" : ""}>Finished</option>
+      </select></label>
+    </div>`;
+  }
+  $("#sessionRows").innerHTML = html;
+}
+
+async function onProcedure(ev) {
+  ev.preventDefault();
+  if (!S.procClient) return toast("Find and choose a client first.", true);
+  const f = trimAll(formValues(ev.target));
+  const err = requiredMissing(f, ["treatmentName", "salesPerson"]);
+  if (err) return toast(err, true);
+  const total = Math.min(60, Math.max(1, parseInt(f.totalSessions, 10) || 0));
+  const sessions = [];
+  for (let i = 1; i <= total; i++) {
+    const date = f[`s_date_${i}`] || "";
+    const time = f[`s_time_${i}`] || "";
+    if (!date) return toast(`Enter the date for session ${i}.`, true);
+    if (time && !/^\d{1,2}:\d{2}$/.test(time)) return toast(`Session ${i}: enter the time as HH:MM.`, true);
+    const finished = f[`s_status_${i}`] === "done";
+    sessions.push({ no: i, date, time, treatmentName: f[`s_name_${i}`] || f.treatmentName, status: finished ? "done" : "pending", doneDate: finished ? todayISO() : "" });
+  }
+  if (S.editTid) {
+    const old = S.treatments.get(S.editTid);
+    if (!old) return toast("This procedure no longer exists.", true);
+    // Keep the finish date of sessions that were already finished.
+    const before = sessionsOf(old);
+    sessions.forEach((s, i) => {
+      const p = before[i];
+      if (s.status === "done") s.doneDate = p && p.status === "done" && p.doneDate ? p.doneDate : todayISO();
+    });
+    const doneCount = sessions.filter(s => s.status === "done").length;
+    const nxt = pendingSorted(sessions)[0] || null;
+    const saved = await write(() => S.db.doc("treatments/" + S.editTid).update({
+      treatmentName: f.treatmentName, totalSessions: total, sessions, sessionsDone: doneCount,
+      status: doneCount === sessions.length ? "complete" : "pending",
+      nextSessionDate: nxt ? nxt.date : "", nextSessionTime: nxt ? nxt.time : "",
+      drName: f.drName || "", salesPerson: f.salesPerson, notes: f.notes || "", updatedAt: nowISO(),
+    }), "Procedure updated.");
+    if (saved) exitEdit();
+    return;
+  }
+  const first = pendingSorted(sessions)[0];
+  const now = nowISO();
+  const t = {
+    clientId: S.procClient, treatmentName: f.treatmentName, totalSessions: total,
+    sessionsDone: sessions.filter(s => s.status === "done").length,
+    sessions, nextSessionDate: first ? first.date : "", nextSessionTime: first ? first.time : "",
+    drName: f.drName || "", salesPerson: f.salesPerson,
+    status: sessions.every(s => s.status === "done") ? "complete" : "pending",
+    notes: f.notes || "", createdAt: now, updatedAt: now,
+  };
+  const ok = await write(() => S.db.doc("treatments/" + uid("t_")).set(t),
+    `Procedure saved with ${total} session${total === 1 ? "" : "s"}.`);
+  if (ok) {
+    // "Save and add another" keeps Dr, sales person and notes so the next treatment starts filled in.
+    const addAnother = !!(ev.submitter && ev.submitter.id === "procAnother");
+    if (!addAnother) {
+      // Saved treatments belong to the client's registration: open that client's profile.
+      const cid = S.procClient;
+      S.procClient = null; S.procQuery = ""; $("#procSearch").value = "";
+      ev.target.reset();
+      buildSessionRows();
+      return openProfile(cid);
+    }
+    ev.target.reset();
+    if (addAnother) {
+      ev.target.elements.drName.value = f.drName || "";
+      ev.target.elements.salesPerson.value = f.salesPerson || "";
+      ev.target.elements.notes.value = f.notes || "";
+    }
+    buildSessionRows();
+    ev.target.elements.treatmentName.focus();
+    if (addAnother) toast("Saved. Enter the next treatment for this client.");
+  }
+}
+
+// ---------- find client ----------
+function renderFindResults() {
+  const list = matchClients(S.findQuery);
+  paint("findResults", list.length
+    ? list.map(c => {
+        const next = nextSessionOf(c.id);
+        return `<button type="button" class="result" data-act="open" data-id="${esc(c.id)}"><div><strong>${esc(c.name)}</strong><div class="meta mono">${esc(c.idNumber)} · ${esc(c.mobile)}</div></div><span class="pill ${next ? "" : "muted"}">${next ? "Next " + esc(fmtDate(next.s.date)) : "No session"}</span></button>`;
+      }).join("")
+    : (S.findQuery.trim() ? `<div class="empty">No client matches "${esc(S.findQuery)}".</div>` : `<div class="empty">Type a name, mobile number or ID number to open a client profile.</div>`));
+}
+
+function profileHtml(c) {
+  const treatments = [...S.treatments.values()].filter(t => t.clientId === c.id).sort(byDesc);
+  const bookings = [...S.bookings.values()].filter(b => b.clientId === c.id)
+    .sort((a, b) => (b.date + b.time).localeCompare(a.date + a.time));
+  const today = todayISO();
+  const upcomingVisits = bookings.filter(b => b.status === "booked" && b.date >= today);
+  const active = treatments.filter(t => t.status !== "complete");
+  const upcoming = upcomingSessionsOf(c.id);
+  const next = upcoming[0] || null;
+
+  const treatmentCards = treatments.length ? treatments.map(t => {
+    const sessions = sessionsOf(t);
+    const doneN = sessions.filter(s => s.status === "done").length;
+    const pct = sessions.length ? Math.round((doneN / sessions.length) * 100) : 0;
+    const isComplete = t.status === "complete";
+    const rows = sessions.map(s => {
+      const when = s.date
+        ? `${esc(dayName(s.date))} ${esc(fmtDate(s.date))}${s.time ? " · " + esc(s.time) : ""}`
+        : `<span class="muted">No date set</span>`;
+      const action = `<select data-act="sess-status" data-id="${esc(t.id)}" data-no="${s.no}" aria-label="Session ${s.no} status" style="width:auto">
+        <option value="pending" ${s.status === "done" ? "" : "selected"}>Pending</option>
+        <option value="done" ${s.status === "done" ? "selected" : ""}>Finished</option>
+      </select>`;
+      return `<li><span><strong>Session ${s.no}</strong> · ${esc(s.treatmentName || t.treatmentName)} · ${when}</span><span class="row-actions">${action}</span></li>`;
+    }).join("");
+    return `<article class="card">
+      <div class="row"><strong>${esc(t.treatmentName)}</strong><span class="pill ${isComplete ? "ok" : "warn"}">${isComplete ? "Complete" : "Pending"}</span></div>
+      <div class="bar" role="img" aria-label="${doneN} of ${sessions.length} sessions done"><i style="width:${pct}%"></i></div>
+      <div class="meta">${doneN} of ${sessions.length} sessions done · Dr ${esc(t.drName || "-")} · Sales person ${esc(t.salesPerson || "-")}</div>
+      ${t.notes ? `<p class="notes">${esc(t.notes)}</p>` : ""}
+      ${rows ? `<ol class="sess-list">${rows}</ol>` : `<div class="empty">No sessions recorded.</div>`}
+      <div class="actions start">${isComplete
+        ? `<button type="button" class="small" data-act="reopen" data-id="${esc(t.id)}">Reopen</button>`
+        : `<button type="button" class="small" data-act="complete" data-id="${esc(t.id)}">Mark procedure complete</button>`}</div>
+    </article>`;
+  }).join("") : `<div class="empty">No procedures yet. Use "New procedure" to add one.</div>`;
+
+  const comingRows = [
+    ...upcoming.map(({ t, s }) => `<div class="row"><span>Session ${s.no} of ${sessionsOf(t).length}: ${esc(s.treatmentName || t.treatmentName)}</span><span class="pill">${esc(dayName(s.date))} ${esc(fmtDate(s.date))}${s.time ? " · " + esc(s.time) : ""}</span></div>`),
+    ...upcomingVisits.map(b => `<div class="row"><span>Booked visit${b.procedureNo ? " (procedure " + esc(b.procedureNo) + ")" : ""}</span><span class="pill">${esc(dayName(b.date))} ${esc(fmtDate(b.date))} · ${esc(b.time)}</span></div>`),
+  ];
+
+  const visitRows = bookings.length ? bookings.map(b => `<div class="row" style="padding:8px 0;border-bottom:1px solid var(--line)">
+      <div><strong>${esc(dayName(b.date))} ${esc(fmtDate(b.date))}${b.time ? " · " + esc(b.time) : ""}</strong>
+        <div class="meta">Treatment ${esc(b.treatmentName || "-")} · Procedure no. ${esc(b.procedureNo || "-")} · Dr ${esc(b.drName || "-")} · Sales person ${esc(b.salesPerson || "-")}${b.reference ? " · Ref " + esc(b.reference) : ""}</div>
+        ${b.remark ? `<div class="meta">Remark: ${esc(b.remark)}</div>` : ""}</div>
+      <select data-act="booking-status" data-id="${esc(b.id)}" aria-label="Visit status" style="width:auto">
+        ${["booked", "came_finished", "cancelled"].map(s => `<option value="${s}" ${s === b.status ? "selected" : ""}>${esc(STATUS_LABEL[s])}</option>`).join("")}
+      </select></div>`).join("") : `<div class="empty">No visits recorded.</div>`;
+
+  return `<section class="panel">
+    <div class="profile-head">
+      <div><h2>${esc(c.name)}</h2><p class="meta mono">ID ${esc(c.idNumber || "-")}</p></div>
+      <div class="actions" style="margin-top:0">
+        <button type="button" class="small" data-act="book" data-id="${esc(c.id)}">New visit</button>
+        <button type="button" class="small" data-act="add-proc" data-id="${esc(c.id)}">New procedure</button>
+      </div>
+    </div>
+    <dl class="kv">
+      <div><dt>Mobile</dt><dd class="mono">${esc(c.mobile || "-")}</dd></div>
+      <div><dt>Email</dt><dd>${esc(c.email || "-")}</dd></div>
+      <div><dt>Registered</dt><dd>${esc(c.createdAt ? fmtDate(c.createdAt.slice(0, 10)) : "-")}</dd></div>
+      <div><dt>Visits</dt><dd>${bookings.length} (${upcomingVisits.length} upcoming)</dd></div>
+      <div><dt>Active procedures</dt><dd>${active.length}</dd></div>
+      <div><dt>Next session</dt><dd>${next ? esc(dayName(next.s.date)) + " " + esc(fmtDate(next.s.date)) + (next.s.time ? " at " + esc(next.s.time) : "") : "None booked"}</dd></div>
+    </dl>
+    <div class="section"><h3>Coming up</h3>
+      ${comingRows.length ? `<div class="list">${comingRows.join("")}</div>` : `<div class="empty">Nothing booked in the future.</div>`}
+    </div>
+    <div class="section"><h3>Procedures</h3><div class="list">${treatmentCards}</div></div>
+    <div class="section"><h3>Visits and reservations</h3><div>${visitRows}</div></div>
+    <details data-key="edit-${esc(c.id)}" style="margin-top:14px"><summary>Edit client details</summary>
+      <form data-form="client" data-id="${esc(c.id)}" class="grid" autocomplete="off" style="margin-top:8px">
+        <label>Name <input name="name" value="${esc(c.name)}" required></label>
+        <label>ID number <input name="idNumber" value="${esc(c.idNumber)}" required></label>
+        <label>Mobile <input name="mobile" value="${esc(c.mobile)}" required></label>
+        <label>Email <input type="email" name="email" value="${esc(c.email || "")}"></label>
+        <div class="actions span2"><button type="submit" class="primary">Save details</button></div>
+      </form></details>
+  </section>`;
+}
+
+function renderProfile() {
+  const c = clientOf(S.profileId);
+  paint("profile", c ? profileHtml(c) : (S.profileId ? `<div class="empty">This client is no longer in the records.</div>` : ""));
+}
+
+// Stores a procedure's session list and recalculates its totals and status.
+async function saveSessions(tid, sessions, okMsg) {
+  const doneCount = sessions.filter(s => s.status === "done").length;
+  const complete = sessions.length > 0 && doneCount === sessions.length;
+  const nxt = pendingSorted(sessions)[0] || null;
+  return write(() => S.db.doc("treatments/" + tid).update({
+    sessions, totalSessions: sessions.length, sessionsDone: doneCount,
+    status: complete ? "complete" : "pending",
+    nextSessionDate: nxt ? nxt.date : "", nextSessionTime: nxt ? nxt.time : "",
+    updatedAt: nowISO(),
+  }), okMsg);
+}
+
+function setSessionDone(tid, no, done) {
+  const t = S.treatments.get(tid);
+  if (!t) return toast("This procedure no longer exists.", true);
+  const sessions = sessionsOf(t).map(s => s.no === no
+    ? { ...s, status: done ? "done" : "pending", doneDate: done ? todayISO() : "" }
+    : s);
+  return saveSessions(tid, sessions, done ? "Session marked done." : "Session marked pending.");
+}
+
+function setTreatmentStatus(id, status) {
+  const t = S.treatments.get(id);
+  if (!t) return toast("This procedure no longer exists.", true);
+  if (status === "complete") {
+    const sessions = sessionsOf(t).map(s => ({ ...s, status: "done", doneDate: s.doneDate || todayISO() }));
+    return saveSessions(id, sessions, "Procedure marked complete.");
+  }
+  // Reopen: the most recently done session becomes pending again.
+  const sessions = sessionsOf(t).slice();
+  let last = -1;
+  sessions.forEach((s, i) => { if (s.status === "done") last = i; });
+  if (last >= 0) sessions[last] = { ...sessions[last], status: "pending", doneDate: "" };
+  return saveSessions(id, sessions, "Procedure reopened.");
+}
+
+function setBookingStatus(id, status) {
+  return write(() => S.db.doc("bookings/" + id).update({ status, updatedAt: nowISO() }), "Visit status updated.");
+}
+
+async function saveClient(form, clientId) {
+  const f = trimAll(formValues(form));
+  const err = requiredMissing(f, ["name", "idNumber", "mobile"]);
+  if (err) return toast(err, true);
+  await write(() => S.db.doc("clients/" + clientId).update({
+    name: f.name, idNumber: normId(f.idNumber), mobile: f.mobile, email: f.email || "", updatedAt: nowISO(),
+  }), "Client details saved.");
+}
+
+// Existing procedures of the chosen client, each with an Edit button.
+function renderProcExisting() {
+  if (!$("#procExisting")) return;
+  if (!S.procClient) { paint("procExisting", ""); return; }
+  const list = [...S.treatments.values()].filter(t => t.clientId === S.procClient).sort(byDesc);
+  if (!list.length) { paint("procExisting", `<div class="empty">This client has no procedures yet.</div>`); return; }
+  paint("procExisting", `<h3>Existing procedures</h3>` + list.map(t => {
+    const sessions = sessionsOf(t);
+    const doneN = sessions.filter(s => s.status === "done").length;
+    const dates = sessions.map(s => `${s.no}. ${s.date ? esc(fmtDate(s.date)) + (s.time ? " " + esc(s.time) : "") : "no date"}`).join(" · ");
+    const editing = S.editTid === t.id;
+    return `<article class="card">
+      <div class="row">
+        <div><strong>${esc(t.treatmentName)}</strong>
+          <div class="meta">${doneN} of ${sessions.length} sessions done · Sales person ${esc(t.salesPerson || "-")}</div>
+          <div class="meta">${dates}</div></div>
+        <div class="row-actions">
+          <span class="pill ${t.status === "complete" ? "ok" : "warn"}">${t.status === "complete" ? "Complete" : "Pending"}</span>
+          <button type="button" class="small" data-act="edit-proc" data-id="${esc(t.id)}" ${editing ? "disabled" : ""}>${editing ? "Editing" : "Edit"}</button>
+        </div>
+      </div>
+    </article>`;
+  }).join(""));
+}
+
+function editProc(tid) {
+  const t = S.treatments.get(tid);
+  if (!t) return toast("This procedure no longer exists.", true);
+  S.procClient = t.clientId; S.procQuery = ""; $("#procSearch").value = "";
+  S.editTid = tid;
+  const form = $("#procForm"), el = form.elements;
+  el.treatmentName.value = t.treatmentName || "";
+  el.totalSessions.value = sessionsOf(t).length || 1;
+  el.drName.value = t.drName || "";
+  el.salesPerson.value = t.salesPerson || "";
+  el.notes.value = t.notes || "";
+  const seed = {};
+  sessionsOf(t).forEach(s => {
+    seed["s_date_" + s.no] = s.date || "";
+    seed["s_time_" + s.no] = s.time || "";
+    seed["s_name_" + s.no] = s.treatmentName || "";
+    seed["s_status_" + s.no] = s.status === "done" ? "done" : "pending";
+  });
+  buildSessionRows(seed);
+  $("#procTitle").textContent = "Edit procedure";
+  $("#procSubmit").textContent = "Update procedure";
+  $("#procCancel").hidden = false;
+  $("#procAnother").hidden = true;
+  renderAll();
+  form.scrollIntoView({ behavior: "smooth", block: "start" });
+  toast("Editing " + t.treatmentName + ". Change anything, then update.");
+}
+
+// Leaves edit mode and clears the form. Does nothing when not editing, so typed
+// values in a new-procedure form are kept.
+function exitEdit() {
+  if (!S.editTid) return;
+  S.editTid = null;
+  const form = $("#procForm");
+  form.reset();
+  buildSessionRows();
+  $("#procTitle").textContent = "New procedure plan";
+  $("#procSubmit").textContent = "Save procedure";
+  $("#procCancel").hidden = true;
+  $("#procAnother").hidden = false;
+  renderAll();
+}
+
+function openProfile(id) {
+  S.profileId = id;
+  S.findQuery = clientOf(id) ? clientOf(id).name : S.findQuery;
+  $("#findInput").value = S.findQuery;
+  show("find");
+}
+// ---------- dashboard: tiles only; a tile opens its detail ----------
+const TILES = [
+  { key: "totalClients", label: "Total clients", title: "All clients" },
+  { key: "newClientsMonth", label: "New clients this month", title: "New clients this month" },
+  { key: "regToday", label: "Registrations today", title: "Registrations today" },
+  { key: "regWeek", label: "Registrations, last 7 days", title: "Registrations, last 7 days" },
+  { key: "peopleTomorrow", label: "People coming tomorrow", title: "Coming tomorrow" },
+  { key: "visitsTomorrow", label: "Visits tomorrow", title: "Visits tomorrow" },
+  { key: "sessionsTomorrow", label: "Sessions tomorrow", title: "Sessions tomorrow" },
+  { key: "visitsBooked", label: "Visits booked, not yet came", title: "Visits booked, not yet came" },
+  { key: "visitsFinished", label: "Visits finished", title: "Visits finished" },
+  { key: "visitsCancelled", label: "Visits cancelled", title: "Visits cancelled" },
+  { key: "activeProcedures", label: "Active procedures", title: "Active procedures" },
+  { key: "completedProcedures", label: "Completed procedures", title: "Completed procedures" },
+  { key: "sessionsDone", label: "Sessions finished", title: "Sessions finished" },
+  { key: "sessionsPending", label: "Sessions pending", title: "Sessions pending" },
+];
+
+function dashStats() {
+  const today = todayISO(), tomorrow = addDays(today, 1), week = addDays(today, -6), monthStart = today.slice(0, 8) + "01";
+  const bookings = [...S.bookings.values()];
+  const treatments = [...S.treatments.values()];
+  const clients = [...S.clients.values()];
+  const created = x => (x.createdAt || "").slice(0, 10);
+  const tomorrowAll = tomorrowRows();
+  const people = new Set(tomorrowAll.map(r => r.clientId));
+  let sessionsDone = 0, sessionsPending = 0;
+  for (const t of treatments) for (const s of sessionsOf(t)) { if (s.status === "done") sessionsDone++; else sessionsPending++; }
+  return {
+    totalClients: clients.length,
+    newClientsMonth: clients.filter(c => created(c) >= monthStart).length,
+    regToday: bookings.filter(b => created(b) === today).length,
+    regWeek: bookings.filter(b => created(b) >= week).length,
+    peopleTomorrow: people.size,
+    visitsTomorrow: tomorrowAll.filter(r => r.type === "Visit").length,
+    sessionsTomorrow: tomorrowAll.filter(r => r.type === "Session").length,
+    visitsBooked: bookings.filter(b => b.status === "booked").length,
+    visitsFinished: bookings.filter(b => b.status === "came_finished").length,
+    visitsCancelled: bookings.filter(b => b.status === "cancelled").length,
+    activeProcedures: treatments.filter(t => t.status !== "complete").length,
+    completedProcedures: treatments.filter(t => t.status === "complete").length,
+    sessionsDone, sessionsPending,
+  };
+}
+
+// Rows for the detail of one tile: client, date, time, detail text and status.
+function tileRows(key) {
+  const today = todayISO(), monthStart = today.slice(0, 8) + "01", week = addDays(today, -6);
+  const created = x => (x.createdAt || "").slice(0, 10);
+  const bk = [...S.bookings.values()];
+  const cname = id => (clientOf(id) || {}).name || "Unknown client";
+  const bookingRow = b => ({ clientId: b.clientId, client: cname(b.clientId), date: b.date || "", time: b.time || "", detail: `${b.treatmentName || "Treatment not set"} · Dr ${b.drName || "-"} · Sales ${b.salesPerson || "-"}`, status: STATUS_LABEL[b.status] || b.status || "" });
+  const treatmentRow = t => ({ clientId: t.clientId, client: cname(t.clientId), date: t.nextSessionDate || "", time: t.nextSessionTime || "", detail: `${t.treatmentName || "Treatment"} · ${sessionsOf(t).filter(s => s.status === "done").length} of ${sessionsOf(t).length} sessions · Dr ${t.drName || "-"} · Sales ${t.salesPerson || "-"}`, status: t.status === "complete" ? "Complete" : "Pending" });
+  const tomorrowAsRow = r => ({ clientId: r.clientId, client: r.client || "Unknown client", date: r.date, time: r.time, detail: `${r.type === "Session" ? "Session" : "Visit"}${r.session ? " · " + r.session : ""} · ${r.procedure || "-"} · Dr ${r.dr || "-"} · Sales ${r.sales || "-"}`, status: r.status });
+  const sessionRows = () => {
+    const out = [];
+    for (const t of S.treatments.values()) for (const s of sessionsOf(t)) out.push({ clientId: t.clientId, client: cname(t.clientId), date: s.date || "", time: s.time || "", detail: `${s.treatmentName || t.treatmentName || "Treatment"} · Session ${s.no} of ${sessionsOf(t).length}`, status: s.status === "done" ? "Finished" : "Pending" });
+    return out;
+  };
+  const byDate = (a, b) => (a.date || "").localeCompare(b.date || "") || (a.time || "").localeCompare(b.time || "");
+  switch (key) {
+    case "totalClients": return [...S.clients.values()].sort((a, b) => (a.name || "").localeCompare(b.name || "")).map(c => ({ clientId: c.id, client: c.name || "Unnamed", date: "", time: "", detail: `ID ${c.idNumber || "-"} · ${c.mobile || "-"}${c.email ? " · " + c.email : ""}`, status: `Registered ${shortDate(c.createdAt)}` }));
+    case "newClientsMonth": return [...S.clients.values()].filter(c => created(c) >= monthStart).map(c => ({ clientId: c.id, client: c.name || "Unnamed", date: created(c), time: "", detail: `ID ${c.idNumber || "-"} · ${c.mobile || "-"}`, status: "New client" })).sort(byDate);
+    case "regToday": return bk.filter(b => created(b) === today).map(bookingRow).sort(byDate);
+    case "regWeek": return bk.filter(b => created(b) >= week).map(bookingRow).sort(byDate);
+    case "peopleTomorrow": return tomorrowRows().map(tomorrowAsRow);
+    case "visitsTomorrow": return tomorrowRows().filter(r => r.type === "Visit").map(tomorrowAsRow);
+    case "sessionsTomorrow": return tomorrowRows().filter(r => r.type === "Session").map(tomorrowAsRow);
+    case "visitsBooked": return bk.filter(b => b.status === "booked").map(bookingRow).sort(byDate);
+    case "visitsFinished": return bk.filter(b => b.status === "came_finished").map(bookingRow).sort(byDate);
+    case "visitsCancelled": return bk.filter(b => b.status === "cancelled").map(bookingRow).sort(byDate);
+    case "activeProcedures": return [...S.treatments.values()].filter(t => t.status !== "complete").map(treatmentRow).sort(byDate);
+    case "completedProcedures": return [...S.treatments.values()].filter(t => t.status === "complete").map(treatmentRow).sort(byDate);
+    case "sessionsDone": return sessionRows().filter(r => r.status === "Finished").sort(byDate);
+    case "sessionsPending": return sessionRows().filter(r => r.status === "Pending").sort(byDate);
+    default: return [];
+  }
+}
+
+function renderDashboard() {
+  if (!$("#dashKpi")) return;
+  const st = dashStats();
+  paint("dashKpi", TILES.map(t => {
+    const sel = S.dashTile === t.key;
+    return `<button type="button" class="kpi kpi-btn${sel ? " sel" : ""}" data-act="tile" data-tile="${t.key}" aria-pressed="${sel}"><span class="kpi-label">${esc(t.label)}</span><strong class="kpi-value mono">${esc(st[t.key])}</strong></button>`;
+  }).join(""));
+  const box = $("#dashDetail");
+  if (!S.dashTile) { box.hidden = true; box.innerHTML = ""; return; }
+  const tile = TILES.find(t => t.key === S.dashTile);
+  const rows = tileRows(S.dashTile);
+  const head = `<div class="panel-head"><div><h2>${esc(tile.title)}</h2><p class="hint">${rows.length} item${rows.length === 1 ? "" : "s"}. Click a name to open the client.</p></div><button type="button" data-act="tile-close">Close</button></div>`;
+  const body = rows.length
+    ? `<div class="tbl" style="max-height:520px;overflow:auto"><div class="tr head" style="grid-template-columns:110px 70px minmax(0,1.2fr) minmax(0,2fr) minmax(0,1fr)"><span>Date</span><span>Time</span><span>Name</span><span>Details</span><span>Status</span></div>` +
+      rows.map(r => `<div class="tr" style="grid-template-columns:110px 70px minmax(0,1.2fr) minmax(0,2fr) minmax(0,1fr)"><span>${esc(r.date ? fmtDate(r.date) : "-")}</span><span class="mono">${esc(r.time || "-")}</span><span><button type="button" class="link" data-act="dash-open" data-id="${esc(r.clientId)}">${esc(r.client)}</button></span><span>${esc(r.detail)}</span><span>${esc(r.status)}</span></div>`).join("") + `</div>`
+    : '<div class="empty">Nothing to show for this item yet.</div>';
+  box.innerHTML = `<div class="panel">${head}${body}</div>`;
+  box.hidden = false;
+}
+
+// ---------- alerts ----------
+// Alerts are computed from current sessions and booked visits. Only acknowledgements
+// and client-message confirmations are stored, under deterministic ids.
+function currentAlerts() {
+  const days = Math.max(0, Number(S.settings.alertDays) || 0);
+  const today = todayISO(), until = addDays(today, days);
+  const out = [];
+  for (const t of S.treatments.values()) {
+    if (t.status === "complete") continue;
+    const sessions = sessionsOf(t);
+    for (const s of sessions) {
+      if (s.status === "done" || !s.date || s.date < today || s.date > until) continue;
+      out.push({
+        key: "s-" + t.id + "-" + s.no + "-" + s.date.replace(/-/g, ""), kind: "session", refId: t.id,
+        clientId: t.clientId, date: s.date, time: s.time || "", salesPerson: t.salesPerson || "",
+        reason: `Session ${s.no} of ${sessions.length} for ${s.treatmentName || t.treatmentName}, on ${dayName(s.date)} ${fmtDate(s.date)}${s.time ? " at " + s.time : ""}${t.drName ? " with " + t.drName : ""}.`,
+      });
+    }
+  }
+  for (const b of S.bookings.values()) {
+    if (b.status !== "booked" || !b.date || b.date < today || b.date > until) continue;
+    out.push({
+      key: "b-" + b.id + "-" + b.date.replace(/-/g, ""), kind: "visit", refId: b.id,
+      clientId: b.clientId, date: b.date, time: b.time || "", salesPerson: b.salesPerson || "",
+      reason: `Booked visit${b.treatmentName ? " for " + b.treatmentName : (b.procedureNo ? " for procedure " + b.procedureNo : "")} on ${dayName(b.date)} ${fmtDate(b.date)}${b.time ? " at " + b.time : ""}${b.drName ? " with " + b.drName : ""}. The client has not arrived yet.`,
+    });
+  }
+  return out.sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+}
+
+function clientMessage(item) {
+  const c = clientOf(item.clientId) || {};
+  const first = String(c.name || "there").split(" ")[0];
+  return `Dear ${first}, this is a reminder from Poly Clinic. ${item.reason} Please reply to this message to confirm. Thank you.`;
+}
+
+function waLink(phone, text) {
+  let d = digits(phone);
+  if (d.startsWith("00")) d = d.slice(2);
+  else if (d.startsWith("0")) d = (digits(S.settings.countryCode) || "971") + d.slice(1);
+  return d ? `https://wa.me/${d}?text=${encodeURIComponent(text)}` : "";
+}
+
+function patchAlert(item, patch) {
+  const path = "alerts/" + item.key;
+  const existing = S.alerts.get(item.key);
+  const base = {
+    kind: item.kind, refId: item.refId, clientId: item.clientId, reason: item.reason,
+    due: item.date, dueTime: item.time, salesPerson: item.salesPerson, createdAt: nowISO(),
+  };
+  if (existing) {
+    return S.db.doc(path).update(patch).catch(e => {
+      if (e && e.code === "invalid_argument") return S.db.doc(path).set({ ...base, ...patch });
+      throw e;
+    });
+  }
+  return S.db.doc(path).set({ ...base, ...patch });
+}
+
+function findItem(key) {
+  const item = currentAlerts().find(i => i.key === key);
+  if (!item) toast("This alert has changed. Refresh the list.", true);
+  return item || null;
+}
+
+async function ackAlert(key) {
+  const item = findItem(key);
+  if (item) await write(() => patchAlert(item, { salesAckAt: nowISO() }), "Acknowledged.");
+}
+
+async function sentAlert(key) {
+  const item = findItem(key);
+  if (item) await write(() => patchAlert(item, { clientSentAt: nowISO() }), "Marked as sent to the client.");
+}
+
+async function copyAlert(key) {
+  const item = findItem(key);
+  if (!item) return;
+  try {
+    await navigator.clipboard.writeText(clientMessage(item));
+    toast("Message copied.");
+  } catch (e) {
+    toast("Copy is blocked here. Select the message text and copy it by hand.", true);
+  }
+}
+
+// Every procedure of a client, with each session's date, time and status.
+function procedureDetailHtml(clientId, highlightId) {
+  const list = [...S.treatments.values()].filter(t => t.clientId === clientId).sort(byDesc);
+  if (!list.length) return `<div class="empty">No procedures recorded for this client.</div>`;
+  return list.map(t => {
+    const sessions = sessionsOf(t);
+    const doneN = sessions.filter(s => s.status === "done").length;
+    const rows = sessions.map(s => `<li><span><strong>Session ${s.no}</strong> · ${esc(s.treatmentName || t.treatmentName)} · ${s.date ? esc(dayName(s.date)) + " " + esc(fmtDate(s.date)) + (s.time ? " · " + esc(s.time) : "") : "No date set"}</span><span class="pill ${s.status === "done" ? "ok" : "warn"}">${s.status === "done" ? "Finished" : "Pending"}</span></li>`).join("");
+    return `<article class="card">
+      <div class="row"><strong>${esc(t.treatmentName)}</strong>
+        <div class="row-actions">${t.id === highlightId ? `<span class="pill">Alert for this session</span>` : ""}<span class="pill ${t.status === "complete" ? "ok" : "warn"}">${t.status === "complete" ? "Complete" : "Pending"}</span></div></div>
+      <div class="meta">${doneN} of ${sessions.length} sessions finished · Dr ${esc(t.drName || "-")} · Sales person ${esc(t.salesPerson || "-")}</div>
+      ${t.notes ? `<p class="notes">${esc(t.notes)}</p>` : ""}
+      <ol class="sess-list">${rows}</ol>
+    </article>`;
+  }).join("");
+}
+
+function alertCard(item) {
+  const rec = S.alerts.get(item.key) || {};
+  const c = clientOf(item.clientId) || {};
+  const acked = !!rec.salesAckAt;
+  const sent = !!rec.clientSentAt;
+  const msg = clientMessage(item);
+  const wa = waLink(c.mobile, msg);
+  const when = `${esc(dayName(item.date))} ${esc(fmtDate(item.date))}${item.time ? " · " + esc(item.time) : ""}`;
+  return `<details class="alert-item" data-key="ac-${esc(item.key)}">
+    <summary class="alert-sum">
+      <span><strong>${esc(c.name || "Unknown client")}</strong><span class="meta"> · ${item.kind === "session" ? "Session" : "Visit"} · ${when}</span></span>
+      <span class="pill ${acked ? "ok" : "warn"}">${acked ? "Acknowledged" : "New"}</span>
+    </summary>
+    <div class="alert-body">
+      <div class="meta mono">ID ${esc(c.idNumber || "-")} · ${esc(c.mobile || "")}</div>
+      <p><strong>Reason:</strong> ${esc(item.reason)}</p>
+      <div class="meta">Sales person: ${esc(item.salesPerson || "not set")} · Client ${sent ? "informed" : "not informed"}</div>
+      <div class="actions start" style="margin-top:0">
+        ${acked ? "" : `<button type="button" class="small primary" data-act="ack" data-akey="${esc(item.key)}">Acknowledge</button>`}
+        <button type="button" class="small" data-act="open" data-id="${esc(item.clientId)}">Open profile</button>
+      </div>
+      <details data-key="pd-${esc(item.key)}"><summary>Procedure details</summary>
+        <div class="list" style="margin-top:8px">${procedureDetailHtml(item.clientId, item.refId)}</div>
+      </details>
+      <details data-key="msg-${esc(item.key)}"><summary>Message for the client</summary>
+        <textarea class="msg" readonly aria-label="Client message">${esc(msg)}</textarea>
+        <div class="actions start" style="margin-top:8px">
+          <button type="button" class="small" data-act="copy" data-akey="${esc(item.key)}">Copy message</button>
+          ${wa ? `<a class="btn" href="${esc(wa)}" target="_blank" rel="noopener">Open in WhatsApp</a>` : `<span class="meta">No mobile number on file.</span>`}
+          ${sent
+            ? `<span class="meta">Marked sent ${esc(fmtDate(rec.clientSentAt.slice(0, 10)))}</span>`
+            : `<button type="button" class="small" data-act="sent" data-akey="${esc(item.key)}">Mark as sent</button>`}
+        </div>
+        <p class="meta" style="margin-top:8px">This app cannot send messages itself. Send the text from WhatsApp or your phone, then mark it as sent.</p>
+      </details>
+    </div>
+  </details>`;
+}
+
+function renderAlerts() {
+  const items = currentAlerts();
+  const sel = $("#alertFilter");
+  const names = [...new Set([...(S.settings.staff || []), ...items.map(i => i.salesPerson)].filter(Boolean))].sort();
+  if (S.alertFilter && !names.includes(S.alertFilter)) S.alertFilter = "";
+  const optHtml = `<option value="">All sales people</option>` + names.map(n => `<option value="${esc(n)}">${esc(n)}</option>`).join("");
+  if (sel.innerHTML !== optHtml) sel.innerHTML = optHtml;
+  sel.value = S.alertFilter;
+  const shown = S.alertFilter ? items.filter(i => i.salesPerson === S.alertFilter) : items;
+  const unacked = items.filter(i => !((S.alerts.get(i.key) || {}).salesAckAt)).length;
+  $("#alertCount").textContent = String(unacked);
+  const days = Math.max(0, Number(S.settings.alertDays) || 0);
+  paint("alertList", shown.length
+    ? shown.map(alertCard).join("")
+    : `<div class="empty">No sessions or visits in the next ${days} day${days === 1 ? "" : "s"}${S.alertFilter ? " for " + esc(S.alertFilter) : ""}.</div>`);
+}
+
+// ---------- settings ----------
+function fillSettingsForm() {
+  const form = $("#settingsForm");
+  if (!form || form.contains(document.activeElement)) return;
+  form.elements.alertDays.value = S.settings.alertDays;
+  form.elements.staff.value = (S.settings.staff || []).join(", ");
+  form.elements.countryCode.value = S.settings.countryCode || "971";
+}
+
+async function onSettings(ev) {
+  ev.preventDefault();
+  const f = trimAll(formValues(ev.target));
+  const days = Math.min(60, Math.max(0, parseInt(f.alertDays, 10) || 0));
+  const staff = String(f.staff || "").split(",").map(s => s.trim()).filter((v, i, a) => v && a.indexOf(v) === i);
+  const countryCode = digits(f.countryCode) || "971";
+  await write(() => S.db.doc("settings/main").set({ alertDays: days, staff, countryCode }), "Settings saved.");
+}
+
+function fillDatalists() {
+  const staff = $("#staffList"), drs = $("#drList");
+  const sHtml = (S.settings.staff || []).map(n => `<option value="${esc(n)}"></option>`).join("");
+  if (staff.innerHTML !== sHtml) staff.innerHTML = sHtml;
+  const names = new Set();
+  S.bookings.forEach(b => { if (b.drName) names.add(b.drName); });
+  S.treatments.forEach(t => { if (t.drName) names.add(t.drName); });
+  const dHtml = [...names].sort().map(n => `<option value="${esc(n)}"></option>`).join("");
+  if (drs.innerHTML !== dHtml) drs.innerHTML = dHtml;
+}
+
+// ---------- tomorrow's report ----------
+function tomorrowRows() {
+  const day = addDays(todayISO(), 1);
+  const rows = [];
+  for (const b of S.bookings.values()) {
+    if (b.date !== day || b.status === "cancelled") continue;
+    const c = clientOf(b.clientId) || {};
+    rows.push({
+      type: "Visit", clientId: b.clientId, date: b.date, time: b.time || "", client: c.name || "", id: c.idNumber || "", mobile: c.mobile || "",
+      procedure: b.treatmentName || (b.procedureNo ? "Procedure no. " + b.procedureNo : ""), session: "",
+      status: STATUS_LABEL[b.status] || b.status, dr: b.drName || "", sales: b.salesPerson || "",
+      reference: b.reference || "", remark: b.remark || "",
+    });
+  }
+  for (const t of S.treatments.values()) {
+    if (t.status === "complete") continue;
+    const sessions = sessionsOf(t);
+    for (const s of sessions) {
+      if (s.status === "done" || s.date !== day) continue;
+      const c = clientOf(t.clientId) || {};
+      rows.push({
+        type: "Session", clientId: t.clientId, date: s.date, time: s.time || "", client: c.name || "", id: c.idNumber || "", mobile: c.mobile || "",
+        procedure: s.treatmentName || t.treatmentName, session: "Session " + s.no + " of " + sessions.length,
+        status: "Pending", dr: t.drName || "", sales: t.salesPerson || "", reference: "", remark: t.notes || "",
+      });
+    }
+  }
+  return rows.sort((a, b) => (a.time || "").localeCompare(b.time || "") || a.client.localeCompare(b.client));
+}
+
+function renderReport() {
+  const btn = $("#reportBtn");
+  if (!btn) return;
+  const day = addDays(todayISO(), 1);
+  const rows = tomorrowRows();
+  const visits = rows.filter(r => r.type === "Visit").length;
+  const sessions = rows.length - visits;
+  let note = `${dayName(day)} ${fmtDate(day)}: ${visits} visit${visits === 1 ? "" : "s"} and ${sessions} session${sessions === 1 ? "" : "s"}.`;
+  if (!S.downloads) note += " Downloads are not available in this view.";
+  $("#reportNote").textContent = note;
+  btn.disabled = !S.downloads;
+}
+
+function csvCell(v) {
+  let s = String(v ?? "");
+  if (/^[=+\-@]/.test(s)) s = "'" + s; // stop spreadsheets from running formulas
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+
+async function downloadTomorrow() {
+  if (!S.downloads) return toast("Downloads are not available in this view.", true);
+  const day = addDays(todayISO(), 1);
+  const rows = tomorrowRows();
+  if (!rows.length) return toast("Nothing is booked for tomorrow.", true);
+  const header = ["Day", "Date", "Time", "Name", "Treatment name", "Dr", "Sales person"];
+  const body = rows.map(r => [dayName(r.date), fmtDate(r.date), r.time, r.client, r.procedure, r.dr, r.sales]);
+  const data = "﻿" + [header, ...body].map(line => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  try {
+    await S.downloads.save({ filename: `clinic-report-${day}.csv`, data });
+    toast("Report saved.");
+  } catch (e) {
+    if (e && e.code === "declined") return;
+    toast(e && e.code === "rate_limited" ? "A download prompt is already open. Try again in a moment." : "The report could not be downloaded here.", true);
+  }
+}
+
+// ---------- date range report ----------
+function rangeRows(from, to) {
+  const rows = [];
+  for (const b of S.bookings.values()) {
+    if (!b.date || b.date < from || b.date > to) continue;
+    const c = clientOf(b.clientId) || {};
+    rows.push({
+      date: b.date, time: b.time || "", type: "Visit", client: c.name || "", id: c.idNumber || "", mobile: c.mobile || "",
+      procedure: b.treatmentName || (b.procedureNo ? "Procedure no. " + b.procedureNo : ""), session: "",
+      status: STATUS_LABEL[b.status] || b.status || "", dr: b.drName || "", sales: b.salesPerson || "",
+      reference: b.reference || "", remark: b.remark || "",
+    });
+  }
+  for (const t of S.treatments.values()) {
+    const sessions = sessionsOf(t);
+    const c = clientOf(t.clientId) || {};
+    for (const s of sessions) {
+      if (!s.date || s.date < from || s.date > to) continue;
+      rows.push({
+        date: s.date, time: s.time || "", type: "Session", client: c.name || "", id: c.idNumber || "", mobile: c.mobile || "",
+        procedure: s.treatmentName || t.treatmentName || "", session: "Session " + s.no + " of " + sessions.length,
+        status: s.status === "done" ? "Finished" : "Pending", dr: t.drName || "", sales: t.salesPerson || "",
+        reference: "", remark: t.notes || "",
+      });
+    }
+  }
+  return rows.sort((a, b) => a.date.localeCompare(b.date) || (a.time || "").localeCompare(b.time || "") || a.client.localeCompare(b.client));
+}
+
+function renderRange() {
+  const btn = $("#filterBtn");
+  if (!btn) return;
+  const from = $("#rangeFrom").value, to = $("#rangeTo").value;
+  btn.disabled = !(from && to && from <= to);
+}
+
+function showFilter() {
+  const from = $("#rangeFrom").value, to = $("#rangeTo").value;
+  if (!from || !to || from > to) return toast("Pick a valid date range.", true);
+  const rows = rangeRows(from, to);
+  const visits = rows.filter(r => r.type === "Visit").length;
+  const box = $("#filterResult");
+  const head = `<div class="panel-head"><div><h2>Filtered report</h2><p class="hint">${esc(fmtDate(from))} to ${esc(fmtDate(to))}: ${visits} visit${visits === 1 ? "" : "s"} and ${rows.length - visits} session${rows.length - visits === 1 ? "" : "s"}.</p></div>`;
+  const table = rows.length
+    ? `<div class="tbl" style="max-height:440px;overflow:auto"><div class="tr head"><span>Date</span><span>Time</span><span>Type</span><span>Name</span><span>Treatment</span><span>Status</span></div>` +
+      rows.map(r => `<div class="tr"><span>${esc(fmtDate(r.date))}</span><span>${esc(r.time)}</span><span>${esc(r.type)}</span><span>${esc(r.client)}</span><span>${esc(r.procedure)}</span><span>${esc(r.status)}</span></div>`).join("") + `</div>`
+    : '<div class="empty">Nothing is booked in this date range.</div>';
+  box.innerHTML = `<div class="panel">${head}<button type="button" class="primary" id="filterDownload" ${!S.downloads || !rows.length ? "disabled" : ""}>Download report (CSV)</button></div>${table}</div>`;
+  box.hidden = false;
+  $("#filterDownload").addEventListener("click", downloadRange);
+}
+
+function hideFilter() {
+  const box = $("#filterResult");
+  if (box) { box.hidden = true; box.innerHTML = ""; }
+}
+
+async function downloadRange() {
+  if (!S.downloads) return toast("Downloads are not available in this view.", true);
+  const from = $("#rangeFrom").value, to = $("#rangeTo").value;
+  if (!from || !to || from > to) return toast("Pick a valid date range.", true);
+  const rows = rangeRows(from, to);
+  if (!rows.length) return toast("Nothing is booked in this date range.", true);
+  const header = ["Date", "Day", "Time", "Type", "Name", "ID number", "Mobile", "Treatment name", "Session", "Status", "Dr", "Sales person", "Reference", "Remark"];
+  const body = rows.map(r => [fmtDate(r.date), dayName(r.date), r.time, r.type, r.client, r.id, r.mobile, r.procedure, r.session, r.status, r.dr, r.sales, r.reference, r.remark]);
+  const data = "\uFEFF" + [header, ...body].map(line => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  try {
+    await S.downloads.save({ filename: `clinic-range-${from}-to-${to}.csv`, data });
+    toast("Date range report saved.");
+  } catch (e) {
+    if (e && e.code === "declined") return;
+    toast(e && e.code === "rate_limited" ? "A download prompt is already open. Try again in a moment." : "The report could not be downloaded here.", true);
+  }
+}
+
+function renderNames() {
+  const btn = $("#namesBtn");
+  if (!btn) return;
+  const from = $("#rangeFrom").value, to = $("#rangeTo").value;
+  if (!from || !to || from > to) { $("#namesNote").textContent = "Pick a valid date range above."; btn.disabled = true; return; }
+  const names = new Set(rangeRows(from, to).map(r => r.client).filter(Boolean));
+  let note = `${names.size} client name${names.size === 1 ? "" : "s"} from ${fmtDate(from)} to ${fmtDate(to)}.`;
+  if (!S.downloads) note += " Downloads are not available in this view.";
+  $("#namesNote").textContent = note;
+  btn.disabled = !S.downloads || names.size === 0;
+}
+
+async function downloadNames() {
+  if (!S.downloads) return toast("Downloads are not available in this view.", true);
+  const from = $("#rangeFrom").value, to = $("#rangeTo").value;
+  if (!from || !to || from > to) return toast("Pick a valid date range.", true);
+  const names = [...new Set(rangeRows(from, to).map(r => r.client).filter(Boolean))].sort((a, b) => a.localeCompare(b));
+  if (!names.length) return toast("No client names in this date range.", true);
+  const data = "\uFEFF" + ["Name", ...names].map(csvCell).join("\r\n") + "\r\n";
+  try {
+    await S.downloads.save({ filename: `clinic-names-${from}-to-${to}.csv`, data });
+    toast("Names report saved.");
+  } catch (e) {
+    if (e && e.code === "declined") return;
+    toast(e && e.code === "rate_limited" ? "A download prompt is already open. Try again in a moment." : "The report could not be downloaded here.", true);
+  }
+}
+
+function allClientRows() {
+  return [...S.clients.values()].sort((a, b) => (a.name || "").localeCompare(b.name || ""));
+}
+
+function shortDate(iso) {
+  const d = iso ? new Date(iso) : null;
+  return d && !isNaN(d) ? d.toLocaleDateString("en-GB", { day: "2-digit", month: "short", year: "numeric" }) : "";
+}
+
+function renderAllClients() {
+  const list = $("#allList");
+  if (!list) return;
+  const rows = allClientRows();
+  $("#allNote").textContent = `${rows.length} client${rows.length === 1 ? "" : "s"} in total, sorted by name.`;
+  list.innerHTML = rows.length
+    ? rows.map(c => `<div class="row card" style="padding:12px 14px"><div><strong>${esc(c.name || "Unnamed")}</strong><div class="meta">ID ${esc(c.idNumber || "-")} · ${esc(c.mobile || "-")}${c.email ? " · " + esc(c.email) : ""}</div></div><span class="meta">Registered ${esc(shortDate(c.createdAt))}</span></div>`).join("")
+    : '<div class="empty">No clients yet.</div>';
+  const btn = $("#allBtn");
+  btn.disabled = !S.downloads || rows.length === 0;
+}
+
+async function downloadAllClients() {
+  if (!S.downloads) return toast("Downloads are not available in this view.", true);
+  const rows = allClientRows();
+  if (!rows.length) return toast("There are no clients to download.", true);
+  const header = ["Name", "ID number", "Mobile", "Email", "Registered"];
+  const body = rows.map(c => [c.name || "", c.idNumber || "", c.mobile || "", c.email || "", shortDate(c.createdAt)]);
+  const data = "\uFEFF" + [header, ...body].map(line => line.map(csvCell).join(",")).join("\r\n") + "\r\n";
+  try {
+    await S.downloads.save({ filename: `clinic-all-clients-${todayISO()}.csv`, data });
+    toast("All clients report saved.");
+  } catch (e) {
+    if (e && e.code === "declined") return;
+    toast(e && e.code === "rate_limited" ? "A download prompt is already open. Try again in a moment." : "The report could not be downloaded here.", true);
+  }
+}
+
+function renderRegNext() {
+  const box = $("#regNext");
+  if (!box) return;
+  if (!S.regClient) { box.hidden = true; box.innerHTML = ""; return; }
+  box.innerHTML = `<div class="row"><div><strong>${esc(S.regName || "Client")} is registered.</strong><div class="meta">Add the treatment for this client now.</div></div><button type="button" class="primary" data-go-proc="${esc(S.regClient)}">Add treatment</button></div>`;
+  box.hidden = false;
+}
+
+// ---------- render and wiring ----------
+function renderAll() {
+  renderFindResults();
+  renderProfile();
+  renderProcChosen();
+  renderProcResults();
+  renderProcExisting();
+  renderAlerts();
+  renderReport();
+  renderRange();
+  renderNames();
+  renderAllClients();
+  renderRegNext();
+  renderDashboard();
+  fillDatalists();
+}
+
+document.addEventListener("click", ev => {
+  const tabBtn = ev.target.closest("[data-tab]");
+  if (tabBtn) return show(tabBtn.dataset.tab);
+  const el = ev.target.closest("[data-act]");
+  if (!el) return;
+  const act = el.dataset.act, id = el.dataset.id, key = el.dataset.akey;
+  if (act === "open") return openProfile(id);
+  if (act === "book") {
+    const c = clientOf(id);
+    if (!c) return;
+    const f = $("#regForm").elements;
+    f.name.value = c.name; f.idNumber.value = c.idNumber; f.mobile.value = c.mobile; f.email.value = c.email || "";
+    return show("register");
+  }
+  if (act === "add-proc") { exitEdit(); S.procClient = id; S.procQuery = ""; $("#procSearch").value = ""; return show("procedures"); }
+  if (act === "pick-proc") { exitEdit(); S.procClient = id; S.procQuery = ""; $("#procSearch").value = ""; return renderAll(); }
+  if (act === "clear-proc") { exitEdit(); S.procClient = null; return renderAll(); }
+  if (act === "edit-proc") return editProc(id);
+  if (act === "cancel-edit") return exitEdit();
+  if (act === "dash-open") return openProfile(id);
+  if (act === "tile") { S.dashTile = S.dashTile === el.dataset.tile ? null : el.dataset.tile; return renderAll(); }
+  if (act === "tile-close") { S.dashTile = null; return renderAll(); }
+  if (act === "sess-done") return setSessionDone(id, Number(el.dataset.no), true);
+  if (act === "sess-undo") return setSessionDone(id, Number(el.dataset.no), false);
+  if (act === "complete") return setTreatmentStatus(id, "complete");
+  if (act === "reopen") return setTreatmentStatus(id, "pending");
+  if (act === "ack") return ackAlert(key);
+  if (act === "sent") return sentAlert(key);
+  if (act === "copy") return copyAlert(key);
+});
+
+document.addEventListener("change", ev => {
+  const t = ev.target;
+  if (t.dataset && t.dataset.act === "booking-status") return setBookingStatus(t.dataset.id, t.value);
+  if (t.dataset && t.dataset.act === "sess-status") return setSessionDone(t.dataset.id, Number(t.dataset.no), t.value === "done");
+  if (t.id === "alertFilter") { S.alertFilter = t.value; renderAlerts(); }
+});
+
+document.addEventListener("submit", ev => {
+  const f = ev.target;
+  if (!f.dataset || !f.dataset.form) return;
+  ev.preventDefault();
+  if (f.dataset.form === "client") return saveClient(f, f.dataset.id);
+});
+
+const regForm = $("#regForm");
+regForm.addEventListener("submit", onRegister);
+regForm.elements.date.addEventListener("input", updateDay);
+regForm.addEventListener("reset", () => setTimeout(() => { regForm.elements.date.value = todayISO(); updateDay(); }, 0));
+$("#procForm").addEventListener("submit", onProcedure);
+$("#procForm").elements.totalSessions.addEventListener("input", () => buildSessionRows());
+buildSessionRows();
+$("#settingsForm").addEventListener("submit", onSettings);
+$("#reportBtn").addEventListener("click", downloadTomorrow);
+$("#filterBtn").addEventListener("click", showFilter);
+$("#rangeFrom").addEventListener("change", () => { renderRange(); hideFilter(); });
+$("#rangeFrom").addEventListener("change", renderNames);
+$("#rangeTo").addEventListener("change", renderNames);
+$("#namesBtn").addEventListener("click", downloadNames);
+$("#allBtn").addEventListener("click", downloadAllClients);
+$("#regNext").addEventListener("click", e => {
+  const b = e.target.closest("[data-go-proc]");
+  if (!b) return;
+  exitEdit();
+  S.procClient = b.dataset.goProc; S.procQuery = ""; S.regClient = null; S.regAlert = true;
+  $("#procSearch").value = "";
+  show("procedures");
+});
+$("#rangeTo").addEventListener("change", () => { renderRange(); hideFilter(); });
+$("#rangeFrom").value = todayISO();
+$("#rangeTo").value = addDays(todayISO(), 7);
+$("#menuBtn").addEventListener("click", () => {
+  document.querySelector(".app").classList.add("menu-hidden");
+  $("#menuOpenBtn").hidden = false;
+});
+$("#menuOpenBtn").addEventListener("click", () => {
+  document.querySelector(".app").classList.remove("menu-hidden");
+  $("#sideNav").classList.remove("collapsed");
+  $("#menuBtn").setAttribute("aria-expanded", "true");
+  $("#menuOpenBtn").hidden = true;
+});
+
+$("#findInput").addEventListener("input", e => { S.findQuery = e.target.value; renderFindResults(); });
+$("#procSearch").addEventListener("input", e => { S.procQuery = e.target.value; renderProcResults(); });
+
+regForm.elements.date.value = todayISO();
+updateDay();
+show("dashboard");
+boot();
+
+})();
+</script>
